@@ -1,249 +1,732 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="pt-BR">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SAM Guinchos</title>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#121a33;
+      --card2:#0f1730;
+      --text:#e8ecff;
+      --muted:#a8b0d6;
+      --line:rgba(255,255,255,.08);
+      --primary:#3b82f6;
+      --primary2:#2563eb;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --shadow: 0 20px 50px rgba(0,0,0,.35);
+      --radius: 16px;
+      --radius2: 12px;
+    }
 
-<title>SAM Guinchos</title>
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 800px at 10% 0%, #19214a 0%, var(--bg) 45%) fixed;
+      color:var(--text);
+    }
 
-<style>
+    .container{
+      max-width:1100px;
+      margin:0 auto;
+      padding:28px 18px 42px;
+    }
 
-body{
-font-family:Arial;
-padding:20px;
-}
+    .topbar{
+      display:flex;
+      gap:14px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:18px;
+    }
 
-input,select,button{
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
 
-width:100%;
-padding:10px;
-margin-top:10px;
+    .logo{
+      width:42px;height:42px;
+      border-radius:14px;
+      background: linear-gradient(135deg, #60a5fa 0%, #2563eb 60%, #1d4ed8 100%);
+      box-shadow: 0 12px 30px rgba(37,99,235,.35);
+      display:grid;place-items:center;
+      font-weight:900;
+      letter-spacing:.5px;
+    }
 
-}
+    .brand h1{
+      font-size:18px;
+      line-height:1.1;
+      margin:0;
+    }
+    .brand p{
+      margin:2px 0 0;
+      color:var(--muted);
+      font-size:12px;
+    }
 
-button{
+    .pill{
+      padding:8px 10px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      border-radius:999px;
+      color:var(--muted);
+      font-size:12px;
+    }
 
-background:#007bff;
-color:white;
-border:0;
+    .grid{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:16px;
+    }
 
-}
+    @media (max-width: 980px){
+      .grid{ grid-template-columns:1fr; }
+    }
 
-</style>
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
 
+    .card .head{
+      padding:16px 16px 12px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .card .head h2{
+      margin:0;
+      font-size:14px;
+      letter-spacing:.3px;
+    }
+
+    .card .head small{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .card .body{
+      padding:16px;
+    }
+
+    .form{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+
+    @media (max-width: 640px){
+      .form{ grid-template-columns:1fr; }
+    }
+
+    label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+
+    input, select{
+      width:100%;
+      padding:12px 12px;
+      border-radius: 12px;
+      border:1px solid var(--line);
+      background: rgba(8,12,28,.55);
+      color:var(--text);
+      outline:none;
+    }
+    input::placeholder{ color: rgba(232,236,255,.4); }
+    input:focus, select:focus{
+      border-color: rgba(59,130,246,.55);
+      box-shadow: 0 0 0 4px rgba(59,130,246,.18);
+    }
+
+    .span-2{ grid-column: span 2; }
+    @media (max-width: 640px){ .span-2{ grid-column: span 1; } }
+
+    .row-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+
+    .btn{
+      border:0;
+      padding:12px 14px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight:700;
+      color:white;
+      background: var(--primary);
+      box-shadow: 0 14px 26px rgba(59,130,246,.25);
+    }
+    .btn:hover{ background: var(--primary2); }
+    .btn.secondary{
+      background: rgba(255,255,255,.07);
+      border:1px solid var(--line);
+      box-shadow:none;
+      color: var(--text);
+      font-weight:650;
+    }
+    .btn.secondary:hover{ background: rgba(255,255,255,.10); }
+
+    .summary{
+      padding:14px 16px;
+      border-top:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .price{
+      font-size:22px;
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+    .hint{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    /* Histórico */
+    .toolbar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:12px;
+    }
+
+    .toolbar .left{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .tablewrap{
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(8,12,28,.45);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width: 860px;
+    }
+
+    th, td{
+      padding:12px 12px;
+      border-bottom:1px solid var(--line);
+      font-size:12px;
+      text-align:left;
+      white-space:nowrap;
+    }
+    th{
+      color:rgba(232,236,255,.85);
+      font-weight:800;
+      background: rgba(255,255,255,.03);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    td{ color: rgba(232,236,255,.9); }
+    tr:hover td{ background: rgba(255,255,255,.03); }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-weight:700;
+      font-size:11px;
+    }
+
+    .status{
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px dashed var(--line);
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+      font-size:12px;
+    }
+
+    .danger{
+      color: #fecaca;
+      border-color: rgba(239,68,68,.35);
+      background: rgba(239,68,68,.08);
+    }
+  </style>
 </head>
 
-
 <body>
-
-<h2>SAM GUINCHOS</h2>
-
-
-<label>Cliente</label>
-
-<select id="cliente"></select>
-
-
-<label>Valor Saída</label>
-
-<input id="saida">
-
-
-<label>Valor KM</label>
-
-<input id="km_valor">
-
-
-<label>KM</label>
-
-<input id="km">
-
-
-<label>Veículo</label>
-
-<input id="veiculo">
-
-
-<label>Categoria</label>
-
-<select id="categoria">
-
-<option>leve</option>
-<option>utilitario</option>
-<option>medio</option>
-<option>pesado</option>
-
-</select>
-
-
-<label>Placa</label>
-
-<input id="placa">
-
-
-<label>Origem</label>
-
-<input id="origem">
-
-
-<label>Destino</label>
-
-<input id="destino">
-
-
-<button onclick="calcularValor()">
-Calcular Valor
-</button>
-
-<h3 id="valorFinal"></h3>
-
-<button onclick="salvar()">
-Salvar Orçamento
-</button>
-
-
-<script>
-
-let clientes=[]
-
-
-// CARREGAR CLIENTES
-
-fetch('/clientes')
-
-.then(r=>r.json())
-
-.then(d=>{
-
-clientes=d
-
-let select=document.getElementById('cliente')
-
-d.forEach(c=>{
-
-let op=document.createElement('option')
-
-op.value=c.id
-
-op.text=c.nome
-
-select.appendChild(op)
-
-})
-
-mostrarParametros()
-
-})
-
-
-
-document.getElementById('cliente')
-.addEventListener('change',mostrarParametros)
-
-
-
-function mostrarParametros(){
-
-let id=document.getElementById('cliente').value
-
-let c=clientes.find(x=>x.id==id)
-
-document.getElementById('saida').value=c.valor_saida
-
-document.getElementById('km_valor').value=c.valor_km
-
-}
-
-
-
-function calcularValor(){
-
-let saida =
-Number(document.getElementById('saida').value)
-
-let valor_km =
-Number(document.getElementById('km_valor').value)
-
-let km =
-Number(document.getElementById('km').value)
-
-
-let total = saida + (km * valor_km)
-
-document.getElementById('valorFinal')
-.innerHTML = "Valor: R$ " + total.toFixed(2)
-
-}
-
-
-
-function salvar(){
-
-
-let cliente_id=
-document.getElementById('cliente').value
-
-
-let dados={
-
-cliente_id:cliente_id,
-
-valor_saida:
-document.getElementById('saida').value,
-
-valor_km:
-document.getElementById('km_valor').value,
-
-km:
-document.getElementById('km').value,
-
-veiculo:
-document.getElementById('veiculo').value,
-
-categoria:
-document.getElementById('categoria').value,
-
-placa:
-document.getElementById('placa').value,
-
-origem:
-document.getElementById('origem').value,
-
-destino:
-document.getElementById('destino').value
-
-}
-
-
-
-fetch('/orcamento',{
-
-method:'POST',
-
-headers:{
-'Content-Type':'application/json'
-},
-
-body:JSON.stringify(dados)
-
-})
-
-.then(r=>r.json())
-
-.then(d=>{
-
-alert("Orçamento salvo")
-
-})
-
-
-}
-
-</script>
-
-
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">SAM</div>
+        <div>
+          <h1>SAM Guinchos</h1>
+          <p>Orçamentos • Bases • Histórico</p>
+        </div>
+      </div>
+
+      <div class="pill" id="envInfo">Ambiente: Codespaces</div>
+    </div>
+
+    <div class="grid">
+      <!-- FORM -->
+      <div class="card">
+        <div class="head">
+          <div>
+            <h2>Novo orçamento</h2>
+            <small>Selecione base e cliente, informe origem/destino e calcule.</small>
+          </div>
+          <span class="badge">v0.2 • base + histórico</span>
+        </div>
+
+        <div class="body">
+          <div class="form">
+            <div>
+              <label>Base</label>
+              <select id="base"></select>
+            </div>
+
+            <div>
+              <label>Cliente</label>
+              <select id="cliente"></select>
+            </div>
+
+            <div>
+              <label>Valor Saída</label>
+              <input id="saida" inputmode="decimal" placeholder="200" />
+            </div>
+
+            <div>
+              <label>Valor KM</label>
+              <input id="km_valor" inputmode="decimal" placeholder="2.85" />
+            </div>
+
+            <div>
+              <label>KM</label>
+              <input id="km" inputmode="decimal" placeholder="Ex.: 35.4" />
+            </div>
+
+            <div>
+              <label>Categoria</label>
+              <select id="categoria">
+                <option>leve</option>
+                <option>utilitario</option>
+                <option>medio</option>
+                <option>pesado</option>
+              </select>
+            </div>
+
+            <div class="span-2">
+              <label>Veículo</label>
+              <input id="veiculo" placeholder="Ex.: Jeep Compass" />
+            </div>
+
+            <div>
+              <label>Placa</label>
+              <input id="placa" placeholder="ABC1D23" />
+            </div>
+
+            <div>
+              <label>Origem</label>
+              <input id="origem" placeholder="Rua, número, bairro, cidade" />
+            </div>
+
+            <div class="span-2">
+              <label>Destino</label>
+              <input id="destino" placeholder="Rua, número, bairro, cidade" />
+            </div>
+          </div>
+
+          <div class="row-actions">
+            <button class="btn" id="btnCalcular">Calcular valor</button>
+            <button class="btn secondary" id="btnLimpar">Limpar</button>
+            <button class="btn secondary" id="btnRecarregar">Recarregar listas</button>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div>
+            <div class="hint">Total calculado</div>
+            <div class="price" id="valorFinal">R$ 0,00</div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <div class="status" id="statusBox">Pronto.</div>
+            <button class="btn" id="btnSalvar">Salvar orçamento</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- INFO / AJUDA -->
+      <div class="card">
+        <div class="head">
+          <div>
+            <h2>Notas</h2>
+            <small>Próximos passos (quando quiser)</small>
+          </div>
+        </div>
+
+        <div class="body">
+          <div class="status">
+            ✅ Base vem da tabela <b>bases</b> via <code>/bases</code><br/>
+            ✅ Clientes vêm de <b>clientes</b> via <code>/clientes</code><br/>
+            ✅ Orçamento salva via <code>POST /orcamento</code><br/>
+            ⏳ Próximo: cálculo automático por rota (Base→Origem→Destino→Base) + “cálculo base2”
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="status danger" id="histWarn" style="display:none;">
+            Histórico não carregou. Verifique se existe endpoint <b>GET /orcamentos</b>.
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="status">
+            Dica: se a tela “não atualizar”, use Ctrl+Shift+R (hard refresh).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div class="card" style="margin-top:16px;">
+      <div class="head">
+        <div>
+          <h2>Histórico de orçamentos</h2>
+          <small>Últimos registros salvos</small>
+        </div>
+        <span class="badge" id="histCount">0 itens</span>
+      </div>
+
+      <div class="body">
+        <div class="toolbar">
+          <div class="left">
+            <input id="filtroTexto" placeholder="Filtrar: cliente/placa/veículo/origem/destino..." style="min-width:320px;" />
+            <select id="filtroCategoria" style="width:180px;">
+              <option value="">Todas categorias</option>
+              <option value="leve">leve</option>
+              <option value="utilitario">utilitario</option>
+              <option value="medio">medio</option>
+              <option value="pesado">pesado</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn secondary" id="btnAtualizarHist">Atualizar</button>
+            <button class="btn secondary" id="btnLimparFiltros">Limpar filtros</button>
+          </div>
+        </div>
+
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Base</th>
+                <th>Cliente</th>
+                <th>Categoria</th>
+                <th>Veículo</th>
+                <th>Placa</th>
+                <th>KM</th>
+                <th>Total</th>
+                <th>Origem</th>
+                <th>Destino</th>
+              </tr>
+            </thead>
+            <tbody id="histBody">
+              <tr><td colspan="10" style="color:rgba(232,236,255,.6);">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="hint" style="margin-top:10px;">
+          Se a tabela ficar vazia, é porque ainda não existem registros ou o endpoint do histórico está diferente.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let clientes = [];
+    let bases = [];
+    let historico = [];
+    let histTimer = null;
+
+    const el = (id) => document.getElementById(id);
+
+    // ========== INIT ==========
+    el("cliente").addEventListener("change", mostrarParametrosCliente);
+    el("btnCalcular").addEventListener("click", calcularValor);
+    el("btnSalvar").addEventListener("click", salvar);
+
+    el("btnLimpar").addEventListener("click", limparFormulario);
+    el("btnRecarregar").addEventListener("click", async () => {
+      await carregarBases();
+      await carregarClientes();
+      setStatus("Listas recarregadas.");
+    });
+
+    el("btnAtualizarHist").addEventListener("click", carregarHistorico);
+    el("btnLimparFiltros").addEventListener("click", () => {
+      el("filtroTexto").value = "";
+      el("filtroCategoria").value = "";
+      renderHistorico();
+    });
+
+    el("filtroTexto").addEventListener("input", renderHistorico);
+    el("filtroCategoria").addEventListener("change", renderHistorico);
+
+    (async function init(){
+      await carregarBases();
+      await carregarClientes();
+      calcularValor();
+      await carregarHistorico();
+      iniciarAutoRefreshHistorico();
+    })();
+
+    // =============================
+    // AUTO-REFRESH HISTÓRICO
+    // =============================
+    function iniciarAutoRefreshHistorico(){
+      if(histTimer) clearInterval(histTimer);
+
+      histTimer = setInterval(() => {
+        carregarHistorico();
+      }, 10000); // 10s
+
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) carregarHistorico();
+      });
+
+      window.addEventListener("focus", () => carregarHistorico());
+    }
+
+    // ========== HELPERS ==========
+    function setStatus(msg, type="ok"){
+      el("statusBox").textContent = msg;
+      el("statusBox").classList.remove("danger");
+      if(type === "danger") el("statusBox").classList.add("danger");
+    }
+
+    function moneyBR(v){
+      const n = Number(v || 0);
+      return n.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+    }
+
+    function fmtDate(dt){
+      if(!dt) return "";
+      const d = new Date(dt);
+      if(Number.isNaN(d.getTime())) return "";
+      return d.toLocaleString("pt-BR", { dateStyle:"short", timeStyle:"short" });
+    }
+
+    // ========== LOAD BASES ==========
+    async function carregarBases(){
+      try{
+        const r = await fetch("/bases", { cache: "no-store" });
+        const d = await r.json();
+        bases = Array.isArray(d) ? d : [];
+
+        const select = el("base");
+        select.innerHTML = "";
+        bases.forEach(b => {
+          const op = document.createElement("option");
+          op.value = b.id;
+          op.textContent = b.nome;
+          select.appendChild(op);
+        });
+      }catch(err){
+        console.error("Erro ao carregar bases:", err);
+        setStatus("Erro ao carregar bases.", "danger");
+      }
+    }
+
+    // ========== LOAD CLIENTES ==========
+    async function carregarClientes(){
+      try{
+        const r = await fetch("/clientes", { cache: "no-store" });
+        const d = await r.json();
+        clientes = Array.isArray(d) ? d : [];
+
+        const select = el("cliente");
+        select.innerHTML = "";
+        clientes.forEach(c => {
+          const op = document.createElement("option");
+          op.value = c.id;
+          op.textContent = c.nome;
+          select.appendChild(op);
+        });
+
+        mostrarParametrosCliente();
+      }catch(err){
+        console.error("Erro ao carregar clientes:", err);
+        setStatus("Erro ao carregar clientes.", "danger");
+      }
+    }
+
+    function mostrarParametrosCliente(){
+      const id = el("cliente").value;
+      const c = clientes.find(x => String(x.id) === String(id));
+      if(!c) return;
+
+      el("saida").value = c.valor_saida ?? "";
+      el("km_valor").value = c.valor_km ?? "";
+      calcularValor();
+    }
+
+    // ========== CALC ==========
+    function calcularValor(){
+      const saida = Number(el("saida").value || 0);
+      const valor_km = Number(el("km_valor").value || 0);
+      const km = Number(el("km").value || 0);
+      const total = saida + (km * valor_km);
+
+      el("valorFinal").textContent = moneyBR(total);
+      return total;
+    }
+
+    function limparFormulario(){
+      el("km").value = "";
+      el("veiculo").value = "";
+      el("placa").value = "";
+      el("origem").value = "";
+      el("destino").value = "";
+      el("categoria").value = "leve";
+      el("valorFinal").textContent = moneyBR(0);
+      setStatus("Formulário limpo.");
+    }
+
+    // ========== SAVE ==========
+    async function salvar(){
+      try{
+        const total = calcularValor();
+
+        const dados = {
+          cliente_id: Number(el("cliente").value),
+          base_id: el("base").value,
+          valor_saida: el("saida").value,
+          valor_km: el("km_valor").value,
+          km: el("km").value,
+          veiculo: el("veiculo").value,
+          categoria: el("categoria").value,
+          placa: el("placa").value,
+          origem: el("origem").value,
+          destino: el("destino").value,
+          valor_total: total
+        };
+
+        const r = await fetch("/orcamento", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify(dados)
+        });
+
+        const respText = await r.text();
+        console.log("POST /orcamento status:", r.status);
+        console.log("POST /orcamento resposta:", respText);
+
+        if(!r.ok){
+          setStatus("Erro ao salvar orçamento.", "danger");
+          alert("Erro ao salvar. Veja o console (F12).");
+          return;
+        }
+
+        setStatus("Orçamento salvo com sucesso ✅");
+        await carregarHistorico();
+      }catch(err){
+        console.error("Erro ao salvar:", err);
+        setStatus("Erro ao salvar orçamento.", "danger");
+        alert("Erro ao salvar orçamento.");
+      }
+    }
+
+    // ========== HISTÓRICO ==========
+    async function carregarHistorico(){
+      try{
+        el("histWarn").style.display = "none";
+
+        // cache-bust + no-store pra garantir atualização
+        const r = await fetch(`/orcamentos?_ts=${Date.now()}`, { cache: "no-store" });
+        const d = await r.json();
+
+        historico = Array.isArray(d) ? d : [];
+        el("histCount").textContent = `${historico.length} itens`;
+        renderHistorico();
+      }catch(err){
+        console.error("Erro ao carregar histórico:", err);
+        el("histWarn").style.display = "block";
+        el("histBody").innerHTML = `<tr><td colspan="10" style="color:rgba(232,236,255,.6);">Não foi possível carregar o histórico.</td></tr>`;
+      }
+    }
+
+    function renderHistorico(){
+      const q = (el("filtroTexto").value || "").toLowerCase().trim();
+      const cat = el("filtroCategoria").value || "";
+
+      const rows = historico.filter(o => {
+        if(cat && String(o.categoria || "").toLowerCase() !== cat) return false;
+        if(!q) return true;
+
+        const hay = [
+          o.cliente_nome, o.cliente,
+          o.base_nome, o.base,
+          o.placa, o.veiculo, o.origem, o.destino, o.categoria, o.status
+        ].filter(Boolean).join(" ").toLowerCase();
+
+        return hay.includes(q);
+      });
+
+      el("histCount").textContent = `${rows.length} itens`;
+
+      if(rows.length === 0){
+        el("histBody").innerHTML = `<tr><td colspan="10" style="color:rgba(232,236,255,.6);">Sem registros para exibir.</td></tr>`;
+        return;
+      }
+
+      el("histBody").innerHTML = rows.map(o => `
+        <tr>
+          <td>${fmtDate(o.created_at || o.data || o.createdAt)}</td>
+          <td>${o.base_nome ?? o.base ?? ""}</td>
+          <td>${o.cliente_nome ?? o.cliente ?? ""}</td>
+          <td>${o.categoria ?? ""}</td>
+          <td>${o.veiculo ?? ""}</td>
+          <td>${o.placa ?? ""}</td>
+          <td>${o.km ?? ""}</td>
+          <td>${moneyBR(o.valor_total ?? o.valor ?? o.total ?? 0)}</td>
+          <td title="${(o.origem ?? "")}">${(o.origem ?? "").slice(0,40)}</td>
+          <td title="${(o.destino ?? "")}">${(o.destino ?? "").slice(0,40)}</td>
+        </tr>
+      `).join("");
+    }
+  </script>
 </body>
-
 </html>
