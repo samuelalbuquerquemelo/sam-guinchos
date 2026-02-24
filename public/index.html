@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>SAM Guinchos</title>
+
+<style>
+
+body{
+font-family:Arial;
+padding:20px;
+}
+
+input,select,button{
+
+width:100%;
+padding:10px;
+margin-top:10px;
+
+}
+
+button{
+
+background:#007bff;
+color:white;
+border:0;
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<h2>SAM GUINCHOS</h2>
+
+
+<label>Cliente</label>
+
+<select id="cliente"></select>
+
+
+<label>Valor Saída</label>
+
+<input id="saida">
+
+
+<label>Valor KM</label>
+
+<input id="km_valor">
+
+
+<label>KM</label>
+
+<input id="km">
+
+
+<label>Veículo</label>
+
+<input id="veiculo">
+
+
+<label>Categoria</label>
+
+<select id="categoria">
+
+<option>leve</option>
+<option>utilitario</option>
+<option>medio</option>
+<option>pesado</option>
+
+</select>
+
+
+<label>Placa</label>
+
+<input id="placa">
+
+
+<label>Origem</label>
+
+<input id="origem">
+
+
+<label>Destino</label>
+
+<input id="destino">
+
+
+<button onclick="calcularValor()">
+Calcular Valor
+</button>
+
+<h3 id="valorFinal"></h3>
+
+<button onclick="salvar()">
+Salvar Orçamento
+</button>
+
+
+<script>
+
+let clientes=[]
+
+
+// CARREGAR CLIENTES
+
+fetch('/clientes')
+
+.then(r=>r.json())
+
+.then(d=>{
+
+clientes=d
+
+let select=document.getElementById('cliente')
+
+d.forEach(c=>{
+
+let op=document.createElement('option')
+
+op.value=c.id
+
+op.text=c.nome
+
+select.appendChild(op)
+
+})
+
+mostrarParametros()
+
+})
+
+
+
+document.getElementById('cliente')
+.addEventListener('change',mostrarParametros)
+
+
+
+function mostrarParametros(){
+
+let id=document.getElementById('cliente').value
+
+let c=clientes.find(x=>x.id==id)
+
+document.getElementById('saida').value=c.valor_saida
+
+document.getElementById('km_valor').value=c.valor_km
+
+}
+
+
+
+function calcularValor(){
+
+let saida =
+Number(document.getElementById('saida').value)
+
+let valor_km =
+Number(document.getElementById('km_valor').value)
+
+let km =
+Number(document.getElementById('km').value)
+
+
+let total = saida + (km * valor_km)
+
+document.getElementById('valorFinal')
+.innerHTML = "Valor: R$ " + total.toFixed(2)
+
+}
+
+
+
+function salvar(){
+
+
+let cliente_id=
+document.getElementById('cliente').value
+
+
+let dados={
+
+cliente_id:cliente_id,
+
+valor_saida:
+document.getElementById('saida').value,
+
+valor_km:
+document.getElementById('km_valor').value,
+
+km:
+document.getElementById('km').value,
+
+veiculo:
+document.getElementById('veiculo').value,
+
+categoria:
+document.getElementById('categoria').value,
+
+placa:
+document.getElementById('placa').value,
+
+origem:
+document.getElementById('origem').value,
+
+destino:
+document.getElementById('destino').value
+
+}
+
+
+
+fetch('/orcamento',{
+
+method:'POST',
+
+headers:{
+'Content-Type':'application/json'
+},
+
+body:JSON.stringify(dados)
+
+})
+
+.then(r=>r.json())
+
+.then(d=>{
+
+alert("Orçamento salvo")
+
+})
+
+
+}
+
+</script>
+
+
+</body>
+
+</html>
