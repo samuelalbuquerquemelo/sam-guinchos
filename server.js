@@ -162,6 +162,87 @@ app.get("/orcamentos", async (req, res) => {
   return res.json(data || []);
 });
 
+
+// ========================================
+// CALCULO DE ROTA GOOGLE (SEGURO)
+// ========================================
+app.post("/rota", async (req, res) => {
+  try {
+    const { origem, destino, base_id } = req.body || {};
+
+    if (!origem || !destino || !base_id) {
+      return res.status(400).json({ erro: "Informe base_id, origem e destino" });
+    }
+
+    // buscar base (UUID)
+    const { data: base, error: baseErr } = await supabase
+      .from("bases")
+      .select("id,nome,endereco")
+      .eq("id", base_id)
+      .single();
+
+    if (baseErr) return res.status(400).json({ erro: "Base não encontrada", detalhes: baseErr.message });
+    if (!base?.endereco) return res.status(400).json({ erro: "base sem endereco" });
+
+    const key = process.env.GOOGLE_MAPS_KEY;
+    if (!key) return res.status(500).json({ erro: "GOOGLE_MAPS_KEY não configurada no .env" });
+
+    async function directions(from, to) {
+      const url =
+        `https://maps.googleapis.com/maps/api/directions/json?` +
+        `origin=${encodeURIComponent(from)}` +
+        `&destination=${encodeURIComponent(to)}` +
+        `&mode=driving&units=metric` +
+        `&key=${encodeURIComponent(key)}`;
+
+      const r = await fetch(url);
+      const j = await r.json();
+
+      // validações
+      if (j.status !== "OK" || !j.routes?.length || !j.routes[0]?.legs?.length) {
+        return {
+          ok: false,
+          status: j.status,
+          error_message: j.error_message || null,
+          from,
+          to
+        };
+      }
+
+      const leg = j.routes[0].legs[0];
+      const km = (leg.distance?.value || 0) / 1000;
+
+      return { ok: true, km };
+    }
+
+    const baseEnd = base.endereco;
+
+    const p1 = await directions(baseEnd, origem);
+    if (!p1.ok) return res.status(400).json({ erro: "Directions falhou Base→Origem", ...p1 });
+
+    const p2 = await directions(origem, destino);
+    if (!p2.ok) return res.status(400).json({ erro: "Directions falhou Origem→Destino", ...p2 });
+
+    const p3 = await directions(destino, baseEnd);
+    if (!p3.ok) return res.status(400).json({ erro: "Directions falhou Destino→Base", ...p3 });
+
+    const total = p1.km + p2.km + p3.km;
+
+    return res.json({
+      km_total: Number(total.toFixed(1)),
+      partes: {
+        base_origem: Number(p1.km.toFixed(1)),
+        origem_destino: Number(p2.km.toFixed(1)),
+        destino_base: Number(p3.km.toFixed(1))
+      },
+      base: { id: base.id, nome: base.nome, endereco: baseEnd }
+    });
+  } catch (e) {
+    return res.status(500).json({ erro: String(e) });
+  }
+});
+
+
 app.listen(3000, () => {
   console.log("Servidor rodando na porta 3000");
 });

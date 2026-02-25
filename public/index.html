@@ -306,7 +306,7 @@
             <h2>Novo orçamento</h2>
             <small>Selecione base e cliente, informe origem/destino e calcule.</small>
           </div>
-          <span class="badge">v0.2 • base + histórico</span>
+          <span class="badge">v0.3 • maps + km automático</span>
         </div>
 
         <div class="body">
@@ -357,7 +357,7 @@
             </div>
 
             <div>
-              <label>Origem</label>
+              <label>Origem (Coleta)</label>
               <input id="origem" placeholder="Rua, número, bairro, cidade" />
             </div>
 
@@ -368,9 +368,9 @@
           </div>
 
           <div class="row-actions">
-            <button class="btn" id="btnCalcular">Calcular valor</button>
-            <button class="btn secondary" id="btnLimpar">Limpar</button>
-            <button class="btn secondary" id="btnRecarregar">Recarregar listas</button>
+            <button class="btn" id="btnCalcular" type="button">Calcular valor</button>
+            <button class="btn secondary" id="btnLimpar" type="button">Limpar</button>
+            <button class="btn secondary" id="btnRecarregar" type="button">Recarregar listas</button>
           </div>
         </div>
 
@@ -381,26 +381,26 @@
           </div>
           <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
             <div class="status" id="statusBox">Pronto.</div>
-            <button class="btn" id="btnSalvar">Salvar orçamento</button>
+            <button class="btn" id="btnSalvar" type="button">Salvar orçamento</button>
           </div>
         </div>
       </div>
 
-      <!-- INFO / AJUDA -->
+      <!-- INFO / MAPA -->
       <div class="card">
         <div class="head">
           <div>
-            <h2>Notas</h2>
-            <small>Próximos passos (quando quiser)</small>
+            <h2>Mapa & Notas</h2>
+            <small>Autocomplete + rota + KM automático</small>
           </div>
         </div>
 
         <div class="body">
           <div class="status">
-            ✅ Base vem da tabela <b>bases</b> via <code>/bases</code><br/>
+            ✅ Base vem de <b>bases</b> via <code>/bases</code><br/>
             ✅ Clientes vêm de <b>clientes</b> via <code>/clientes</code><br/>
-            ✅ Orçamento salva via <code>POST /orcamento</code><br/>
-            ⏳ Próximo: cálculo automático por rota (Base→Origem→Destino→Base) + “cálculo base2”
+            ✅ Salva em <code>POST /orcamento</code><br/>
+            ✅ KM automático via <code>POST /rota</code> (backend seguro)<br/>
           </div>
 
           <div style="height:12px"></div>
@@ -412,6 +412,24 @@
           <div style="height:12px"></div>
 
           <div class="status">
+            <b>Mapa</b><br/>
+            Selecione a Base e escolha Origem/Destino no autocomplete.
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div id="map" style="
+            width:100%;
+            height:360px;
+            border-radius:16px;
+            border:1px solid rgba(255,255,255,.08);
+            overflow:hidden;
+            background:rgba(0,0,0,.2);
+          "></div>
+
+          <div style="height:12px"></div>
+
+          <div class="hint">
             Dica: se a tela “não atualizar”, use Ctrl+Shift+R (hard refresh).
           </div>
         </div>
@@ -441,8 +459,8 @@
             </select>
           </div>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="btn secondary" id="btnAtualizarHist">Atualizar</button>
-            <button class="btn secondary" id="btnLimparFiltros">Limpar filtros</button>
+            <button class="btn secondary" id="btnAtualizarHist" type="button">Atualizar</button>
+            <button class="btn secondary" id="btnLimparFiltros" type="button">Limpar filtros</button>
           </div>
         </div>
 
@@ -493,6 +511,8 @@
       await carregarBases();
       await carregarClientes();
       setStatus("Listas recarregadas.");
+      // recalcula rota/km quando recarrega bases
+      if (window.google && typeof initMaps === "function" && gDirectionsService) agendarAtualizacaoRota();
     });
 
     el("btnAtualizarHist").addEventListener("click", carregarHistorico);
@@ -519,9 +539,7 @@
     function iniciarAutoRefreshHistorico(){
       if(histTimer) clearInterval(histTimer);
 
-      histTimer = setInterval(() => {
-        carregarHistorico();
-      }, 10000); // 10s
+      histTimer = setInterval(() => carregarHistorico(), 10000);
 
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden) carregarHistorico();
@@ -557,16 +575,28 @@
         bases = Array.isArray(d) ? d : [];
 
         const select = el("base");
+        const current = select.value;
         select.innerHTML = "";
+
         bases.forEach(b => {
           const op = document.createElement("option");
           op.value = b.id;
           op.textContent = b.nome;
           select.appendChild(op);
         });
-      }catch(err){
-        console.error("Erro ao carregar bases:", err);
-        setStatus("Erro ao carregar bases.", "danger");
+
+        // tenta manter selecionada
+        if (current) select.value = current;
+
+        // quando muda base, recalcula rota/km
+        select.onchange = () => {
+          if (window.agendarAtualizacaoRota) agendarAtualizacaoRota();
+        };
+        // após preencher o select e setar o value...
+        if (window.agendarAtualizacaoRota) agendarAtualizacaoRota();
+              }catch(err){
+                console.error("Erro ao carregar bases:", err);
+                setStatus("Erro ao carregar bases.", "danger");
       }
     }
 
@@ -623,15 +653,22 @@
       el("categoria").value = "leve";
       el("valorFinal").textContent = moneyBR(0);
       setStatus("Formulário limpo.");
+      if (window.agendarAtualizacaoRota) agendarAtualizacaoRota();
     }
 
     // ========== SAVE ==========
+    
     async function salvar(){
+    
+        if(!el("cliente").value){
+        setStatus("Selecione um cliente antes de salvar.", "danger");
+         return;
+}
       try{
         const total = calcularValor();
 
         const dados = {
-          cliente_id: Number(el("cliente").value),
+          cliente_id: el("cliente").value,
           base_id: el("base").value,
           valor_saida: el("saida").value,
           valor_km: el("km_valor").value,
@@ -673,8 +710,6 @@
     async function carregarHistorico(){
       try{
         el("histWarn").style.display = "none";
-
-        // cache-bust + no-store pra garantir atualização
         const r = await fetch(`/orcamentos?_ts=${Date.now()}`, { cache: "no-store" });
         const d = await r.json();
 
@@ -727,6 +762,132 @@
         </tr>
       `).join("");
     }
+
+    // =============================
+    // GOOGLE MAPS (FRONT: mapa + autocomplete)
+    // KM via backend /rota (seguro)
+    // =============================
+    let gmap, gDirectionsService, gDirectionsRenderer;
+    let gAutoOrigem, gAutoDestino;
+    let rotaTimer = null;
+
+    function initMaps() {
+      gmap = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: -23.3649, lng: -46.7406 },
+        zoom: 12,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false
+      });
+
+      gDirectionsService = new google.maps.DirectionsService();
+      gDirectionsRenderer = new google.maps.DirectionsRenderer({
+        map: gmap,
+        suppressMarkers: false
+      });
+
+      const inputOrigem = document.getElementById("origem");
+      const inputDestino = document.getElementById("destino");
+
+      gAutoOrigem = new google.maps.places.Autocomplete(inputOrigem, {
+        types: ["address"],
+        componentRestrictions: { country: "br" }
+      });
+
+      gAutoDestino = new google.maps.places.Autocomplete(inputDestino, {
+        types: ["address"],
+        componentRestrictions: { country: "br" }
+      });
+
+      gAutoOrigem.addListener("place_changed", agendarAtualizacaoRota);
+      gAutoDestino.addListener("place_changed", agendarAtualizacaoRota);
+
+      document.getElementById("base").addEventListener("change", agendarAtualizacaoRota);
+      inputOrigem.addEventListener("blur", agendarAtualizacaoRota);
+      inputDestino.addEventListener("blur", agendarAtualizacaoRota);
+      // ADICIONAR:
+      inputOrigem.addEventListener("input", agendarAtualizacaoRota);
+      inputDestino.addEventListener("input", agendarAtualizacaoRota);
+      agendarAtualizacaoRota();
+    }
+
+    function getBaseSelecionada() {
+      const baseId = document.getElementById("base").value;
+      const b = (bases || []).find(x => String(x.id) === String(baseId));
+      return b || null;
+    }
+
+    function agendarAtualizacaoRota() {
+      if (rotaTimer) clearTimeout(rotaTimer);
+      rotaTimer = setTimeout(() => atualizarMapaEKm(), 350);
+    }
+
+    async function atualizarMapaEKm() {
+      try {
+        const b = getBaseSelecionada();
+        const origem = (document.getElementById("origem").value || "").trim();
+        const destino = (document.getElementById("destino").value || "").trim();
+
+        if (!b?.endereco || !origem || !destino) return;
+
+        desenharRotaNoMapa(b.endereco, origem, destino);
+        await calcularKmViaBackend(b.id, origem, destino);
+      } catch (e) {
+        console.error(e);
+        setStatus("Erro ao atualizar rota/KM.", "danger");
+      }
+    }
+
+    function desenharRotaNoMapa(baseEndereco, origem, destino) {
+      if (!gDirectionsService || !gDirectionsRenderer) return;
+
+      const request = {
+        origin: baseEndereco,
+        destination: baseEndereco,
+        waypoints: [
+          { location: origem, stopover: true },
+          { location: destino, stopover: true }
+        ],
+        optimizeWaypoints: false,
+        travelMode: google.maps.TravelMode.DRIVING
+      };
+
+      gDirectionsService.route(request, (result, status) => {
+        if (status !== "OK") {
+          console.error("Directions (front) error:", status);
+          setStatus("Não foi possível desenhar a rota no mapa.", "danger");
+          return;
+        }
+        gDirectionsRenderer.setDirections(result);
+      });
+    }
+
+    async function calcularKmViaBackend(base_id, origem, destino) {
+      const r = await fetch("/rota", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ base_id, origem, destino })
+      });
+
+      const j = await r.json().catch(() => ({}));
+
+      if (!r.ok) {
+        console.error("Erro /rota:", j);
+        setStatus(j.erro || "Erro ao calcular KM.", "danger");
+        return;
+      }
+
+      document.getElementById("km").value = Number(j.km_total || 0).toFixed(1);
+      calcularValor();
+      setStatus(`KM automático: ${Number(j.km_total || 0).toFixed(1)} km ✅`);
+    }
   </script>
+
+  <!-- GOOGLE MAPS (KEY FRONT) -->
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKkex4PTmvzwa-xuZawwmnnaZrpP5Z6ug&libraries=places&callback=initMaps"
+    async
+    defer
+  ></script>
 </body>
 </html>
