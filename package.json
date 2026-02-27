@@ -7,8 +7,10 @@
   "scripts": {
     "start": "node server.js"
   },
-  "engines": {
-    "node": ">=18"
+  "engines": {"engines": {
+  "node": "20.x"
+}
+    "node": "20.x"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
