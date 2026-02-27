@@ -8,6 +8,36 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/orcamentos", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("orcamentos")
+      .select(`
+        id, created_at, categoria, placa, origem, destino,
+        km_total, valor_bruto, pedagio_total, combustivel_valor,
+        manutencao_valor, cooperativa_valor, valor_liquido, margem_liquida_km,
+        clientes ( nome ),
+        bases ( nome ),
+        veiculos ( nome )
+      `)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    const out = (data || []).map(o => ({
+      ...o,
+      cliente_nome: o.clientes?.nome ?? "",
+      base_nome: o.bases?.nome ?? "",
+      veiculo: o.veiculos?.nome ?? (o.veiculo ?? "")
+    }));
+
+    res.json(out);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
 // Servir o frontend
 app.use(express.static("public"));
 
@@ -41,7 +71,23 @@ app.post("/cliente", async (req, res) => {
   if (error) return res.status(400).json({ error: error.message });
   return res.json(data);
 });
+/*
+==============================
+VEICULOS
+==============================
+*/
 
+// LISTAR VEÍCULOS
+app.get('/veiculos', async (req, res) => {
+  const { data, error } = await supabase
+    .from('veiculos')
+    .select('*')
+    .eq('ativo', true)
+    .order('nome');
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
 /*
 ==============================
 BASES
@@ -61,86 +107,161 @@ app.get("/bases", async (req, res) => {
 
 /*
 ==============================
-ORÇAMENTO
+VEICULOS
 ==============================
 */
 
+// LISTAR VEÍCULOS
+app.get('/veiculos', async (req, res) => {
+  const { data, error } = await supabase
+    .from('veiculos')
+    .select('*')
+    .eq('ativo', true)
+    .order('nome');
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// CRIAR VEÍCULO (opcional depois)
+app.post('/veiculo', async (req, res) => {
+  const dados = req.body;
+
+  const { data, error } = await supabase
+    .from('veiculos')
+    .insert([dados])
+    .select()
+    .single();
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+
+
+
+/*
+==============================
+ORÇAMENTO
+==============================
+*/
 // CRIAR ORÇAMENTO
-app.post("/orcamento", async (req, res) => {
+app.post('/orcamento', async (req, res) => {
   try {
-    const dados = req.body || {};
+    const dados = req.body;
 
-    if (!dados.cliente_id) {
-      return res.status(400).json({ error: "cliente_id é obrigatório" });
-    }
+    if (!dados.cliente_id) return res.status(400).json({ error: "cliente_id é obrigatório" });
+    if (!dados.base_id) return res.status(400).json({ error: "base_id é obrigatório" });
+    if (!dados.veiculo_id) return res.status(400).json({ error: "veiculo_id é obrigatório" });
 
-    // Buscar cliente (pega parâmetros padrão)
-    const { data: cliente, error: errCliente } = await supabase
-      .from("clientes")
-      .select("*")
-      .eq("id", dados.cliente_id)
+    // CLIENTE
+    const { data: cliente, error: eCli } = await supabase
+      .from('clientes')
+      .select('id,nome,valor_saida,valor_km,tipo')
+      .eq('id', dados.cliente_id)
       .single();
 
-    if (errCliente) {
-      return res.status(400).json({ error: "Cliente não encontrado", details: errCliente.message });
+    if (eCli || !cliente) {
+      return res.status(400).json({ error: "cliente não encontrado" });
     }
 
-    // parâmetros (permite sobrescrever pelo formulário)
-    let valor_saida = cliente.valor_saida ?? 0;
-    let valor_km = cliente.valor_km ?? 0;
+    // VEICULO
+    const { data: veic, error: eV } = await supabase
+      .from('veiculos')
+      .select('*')
+      .eq('id', dados.veiculo_id)
+      .single();
 
-    if (dados.valor_saida !== undefined && dados.valor_saida !== "") {
-      valor_saida = Number(dados.valor_saida);
+    if (eV || !veic) {
+      return res.status(400).json({ error: "veiculo não encontrado" });
     }
-    if (dados.valor_km !== undefined && dados.valor_km !== "") {
-      valor_km = Number(dados.valor_km);
-    }
 
-    const km = dados.km !== undefined && dados.km !== "" ? Number(dados.km) : 0;
+    // PARAMETROS CLIENTE
+    let valor_saida = cliente.valor_saida;
+    let valor_km = cliente.valor_km;
 
-    // cálculo
-    const valor_total = Number(valor_saida) + (Number(km) * Number(valor_km));
+    if (dados.valor_saida) valor_saida = Number(dados.valor_saida);
+    if (dados.valor_km) valor_km = Number(dados.valor_km);
 
-    // OBS: sua tabela atual tem "valor" (e você mostrou "data" e "status").
-    // Não vou mandar base_id por enquanto, porque provavelmente não existe na tabela e quebra insert.
+    // KM TOTAL
+    const km_total = Number(dados.km_total ?? dados.km ?? 0);
+
+    // BRUTO
+    const valor_bruto =
+      Number(valor_saida) + (km_total * Number(valor_km));
+
+    // CUSTOS
+    const manutencao_percent = Number(dados.manutencao_percent ?? 6.5);
+    const diesel_preco_litro = Number(dados.diesel_preco_litro ?? 6.17);
+    const km_por_litro = Number(dados.km_por_litro ?? veic.km_por_litro);
+    const pedagio_total = Number(dados.pedagio_total ?? 0);
+
+    const manutencao_valor = valor_bruto * (manutencao_percent / 100);
+    const combustivel_valor =
+      km_por_litro > 0 ? (km_total / km_por_litro) * diesel_preco_litro : 0;
+
+    const cooperativa_percent = (cliente.tipo === "cooperativa") ? 20 : 0;
+    const cooperativa_valor = valor_bruto * (cooperativa_percent / 100);
+
+    const valor_liquido =
+      valor_bruto
+      - pedagio_total
+      - manutencao_valor
+      - combustivel_valor
+      - cooperativa_valor;
+
+    const margem_liquida_km =
+      km_total > 0 ? (valor_liquido / km_total) : 0;
+
     const novo = {
-   
-      cliente_id: Number(dados.cliente_id),
-      cliente: cliente.nome ?? null,
-      telefone: cliente.telefone ?? null,
+      cliente_id: cliente.id,
+      base_id: dados.base_id,
+      veiculo_id: veic.id,
 
-      veiculo: dados.veiculo ?? null,
-      categoria: dados.categoria ?? null,
-      placa: dados.placa ?? null,
+      cliente: cliente.nome,
+      veiculo: veic.nome,
 
-      origem: dados.origem ?? null,
-      destino: dados.destino ?? null,
+      categoria: dados.categoria,
+      placa: dados.placa,
+      origem: dados.origem,
+      destino: dados.destino,
 
-      km: km,
+      km_total,
+      valor_saida,
+      valor_km,
+      valor_bruto,
+      pedagio_total,
 
-      valor_saida: valor_saida,
-      valor_km: valor_km,
+      manutencao_percent,
+      manutencao_valor,
+      diesel_preco_litro,
+      km_por_litro,
+      combustivel_valor,
+      cooperativa_percent,
+      cooperativa_valor,
 
-      valor: valor_total,     // coluna existente
-      valor_total: valor_total, // se existir, preenche também (se não existir, remova esta linha)
+      valor_liquido,
+      margem_liquida_km,
 
-      data: new Date().toISOString().slice(0, 10), // YYYY-MM-DD (se a coluna existir)
       status: "novo"
     };
 
     const { data, error } = await supabase
-      .from("orcamentos")
+      .from('orcamentos')
       .insert([novo])
       .select()
       .single();
 
     if (error) {
-      return res.status(400).json({ error: error.message, details: error });
+      console.log(error);
+      return res.status(400).json({ error: error.message });
     }
 
-    return res.json({ ok: true, data });
+    res.json(data);
+
   } catch (e) {
-    return res.status(500).json({ error: String(e) });
+    console.log(e);
+    res.status(500).json({ error: String(e) });
   }
 });
 

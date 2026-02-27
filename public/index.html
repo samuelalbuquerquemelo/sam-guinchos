@@ -9,20 +9,15 @@
     :root{
       --bg:#0b1020;
       --card:#121a33;
-      --card2:#0f1730;
       --text:#e8ecff;
       --muted:#a8b0d6;
       --line:rgba(255,255,255,.08);
       --primary:#3b82f6;
       --primary2:#2563eb;
-      --ok:#22c55e;
-      --warn:#f59e0b;
       --danger:#ef4444;
       --shadow: 0 20px 50px rgba(0,0,0,.35);
       --radius: 16px;
-      --radius2: 12px;
     }
-
     *{ box-sizing:border-box; }
     body{
       margin:0;
@@ -30,66 +25,33 @@
       background: radial-gradient(1200px 800px at 10% 0%, #19214a 0%, var(--bg) 45%) fixed;
       color:var(--text);
     }
-
-    .container{
-      max-width:1100px;
-      margin:0 auto;
-      padding:28px 18px 42px;
-    }
-
-    .topbar{
-      display:flex;
-      gap:14px;
-      align-items:center;
-      justify-content:space-between;
-      margin-bottom:18px;
-    }
-
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:12px;
-    }
-
+    .container{ max-width:1100px; margin:0 auto; padding:28px 18px 42px; }
+    .topbar{ display:flex; gap:14px; align-items:center; justify-content:space-between; margin-bottom:18px; }
+    .brand{ display:flex; align-items:center; gap:12px; }
     .logo{
-      width:42px;height:42px;
-      border-radius:14px;
-      background: linear-gradient(135deg, #60a5fa 0%, #2563eb 60%, #1d4ed8 100%);
-      box-shadow: 0 12px 30px rgba(37,99,235,.35);
-      display:grid;place-items:center;
-      font-weight:900;
-      letter-spacing:.5px;
-    }
-
-    .brand h1{
-      font-size:18px;
-      line-height:1.1;
-      margin:0;
-    }
-    .brand p{
-      margin:2px 0 0;
-      color:var(--muted);
-      font-size:12px;
-    }
-
-    .pill{
-      padding:8px 10px;
-      border:1px solid var(--line);
+      width:72px; height:72px;
+      border-radius:16px;
       background: rgba(255,255,255,.04);
-      border-radius:999px;
-      color:var(--muted);
-      font-size:12px;
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      overflow:hidden;
+      display:flex; align-items:center; justify-content:center;
     }
-
-    .grid{
-      display:grid;
-      grid-template-columns: 1.15fr .85fr;
-      gap:16px;
+    .logo img{
+      width:100%;
+      height:100%;
+      object-fit: contain;
+      padding:6px;
+      display:block;
     }
-
-    @media (max-width: 980px){
-      .grid{ grid-template-columns:1fr; }
+    .brand h1{ font-size:18px; line-height:1.1; margin:0; }
+    .brand p{ margin:2px 0 0; color:var(--muted); font-size:12px; }
+    .pill{
+      padding:8px 10px;border:1px solid var(--line);
+      background: rgba(255,255,255,.04);border-radius:999px;color:var(--muted);font-size:12px;
     }
+    .grid{ display:grid; grid-template-columns: 1.15fr .85fr; gap:16px; }
+    @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } }
 
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
@@ -98,51 +60,21 @@
       box-shadow: var(--shadow);
       overflow:hidden;
     }
-
     .card .head{
       padding:16px 16px 12px;
       border-bottom:1px solid var(--line);
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-between;
-      gap:12px;
+      display:flex; align-items:flex-end; justify-content:space-between; gap:12px;
     }
+    .card .head h2{ margin:0; font-size:14px; letter-spacing:.3px; }
+    .card .head small{ color:var(--muted); font-size:12px; }
+    .card .body{ padding:16px; }
 
-    .card .head h2{
-      margin:0;
-      font-size:14px;
-      letter-spacing:.3px;
-    }
-
-    .card .head small{
-      color:var(--muted);
-      font-size:12px;
-    }
-
-    .card .body{
-      padding:16px;
-    }
-
-    .form{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:12px;
-    }
-
-    @media (max-width: 640px){
-      .form{ grid-template-columns:1fr; }
-    }
-
-    label{
-      display:block;
-      font-size:12px;
-      color:var(--muted);
-      margin-bottom:6px;
-    }
+    .form{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    @media (max-width: 640px){ .form{ grid-template-columns:1fr; } }
+    label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
 
     input, select{
-      width:100%;
-      padding:12px 12px;
+      width:100%; padding:12px 12px;
       border-radius: 12px;
       border:1px solid var(--line);
       background: rgba(8,12,28,.55);
@@ -154,25 +86,14 @@
       border-color: rgba(59,130,246,.55);
       box-shadow: 0 0 0 4px rgba(59,130,246,.18);
     }
-
     .span-2{ grid-column: span 2; }
     @media (max-width: 640px){ .span-2{ grid-column: span 1; } }
 
-    .row-actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:14px;
-    }
+    .row-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
 
     .btn{
-      border:0;
-      padding:12px 14px;
-      border-radius: 12px;
-      cursor:pointer;
-      font-weight:700;
-      color:white;
-      background: var(--primary);
+      border:0; padding:12px 14px; border-radius: 12px;
+      cursor:pointer; font-weight:700; color:white; background: var(--primary);
       box-shadow: 0 14px 26px rgba(59,130,246,.25);
     }
     .btn:hover{ background: var(--primary2); }
@@ -189,83 +110,10 @@
       padding:14px 16px;
       border-top:1px solid var(--line);
       background: rgba(255,255,255,.03);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
+      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
     }
-
-    .price{
-      font-size:22px;
-      font-weight:900;
-      letter-spacing:.2px;
-    }
-    .hint{
-      color:var(--muted);
-      font-size:12px;
-    }
-
-    /* Histórico */
-    .toolbar{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-      justify-content:space-between;
-      margin-bottom:12px;
-    }
-
-    .toolbar .left{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-
-    .tablewrap{
-      overflow:auto;
-      border:1px solid var(--line);
-      border-radius: 14px;
-      background: rgba(8,12,28,.45);
-    }
-
-    table{
-      width:100%;
-      border-collapse:collapse;
-      min-width: 860px;
-    }
-
-    th, td{
-      padding:12px 12px;
-      border-bottom:1px solid var(--line);
-      font-size:12px;
-      text-align:left;
-      white-space:nowrap;
-    }
-    th{
-      color:rgba(232,236,255,.85);
-      font-weight:800;
-      background: rgba(255,255,255,.03);
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-    td{ color: rgba(232,236,255,.9); }
-    tr:hover td{ background: rgba(255,255,255,.03); }
-
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.04);
-      color: var(--muted);
-      font-weight:700;
-      font-size:11px;
-    }
+    .price{ font-size:22px; font-weight:900; letter-spacing:.2px; }
+    .hint{ color:var(--muted); font-size:12px; }
 
     .status{
       padding:10px 12px;
@@ -275,12 +123,30 @@
       color: var(--muted);
       font-size:12px;
     }
-
     .danger{
       color: #fecaca;
       border-color: rgba(239,68,68,.35);
       background: rgba(239,68,68,.08);
     }
+
+    #map{
+      width:100%;
+      height:360px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.08);
+      overflow:hidden;
+      background:rgba(0,0,0,.2);
+    }
+
+    /* Histórico */
+    .toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .toolbar .left{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .tablewrap{ overflow:auto; border:1px solid var(--line); border-radius: 14px; background: rgba(8,12,28,.45); }
+    table{ width:100%; border-collapse:collapse; min-width: 980px; }
+    th, td{ padding:12px 12px; border-bottom:1px solid var(--line); font-size:12px; text-align:left; white-space:nowrap; }
+    th{ color:rgba(232,236,255,.85); font-weight:800; background: rgba(255,255,255,.03); position: sticky; top: 0; z-index: 1; }
+    td{ color: rgba(232,236,255,.9); }
+    tr:hover td{ background: rgba(255,255,255,.03); }
   </style>
 </head>
 
@@ -288,13 +154,14 @@
   <div class="container">
     <div class="topbar">
       <div class="brand">
-        <div class="logo">SAM</div>
+        <div class="logo" id="logoBox">
+          <img src="/logo_sam_transp.png?v=3" alt="SAM Guinchos">
+        </div>
         <div>
           <h1>SAM Guinchos</h1>
-          <p>Orçamentos • Bases • Histórico</p>
+          <p>Orçamentos • Bases • Veículos • Pedágio • Líquido</p>
         </div>
       </div>
-
       <div class="pill" id="envInfo">Ambiente: Codespaces</div>
     </div>
 
@@ -304,9 +171,9 @@
         <div class="head">
           <div>
             <h2>Novo orçamento</h2>
-            <small>Selecione base e cliente, informe origem/destino e calcule.</small>
+            <small>Base + Cliente + Veículo • KM automático • custos e líquido.</small>
           </div>
-          <span class="badge">v0.3 • maps + km automático</span>
+          <span class="pill">v0.5 • Google no front</span>
         </div>
 
         <div class="body">
@@ -321,6 +188,36 @@
               <select id="cliente"></select>
             </div>
 
+            <div class="span-2">
+              <label>Veículo (cadastro)</label>
+              <select id="veiculo_id"></select>
+            </div>
+
+            <div>
+              <label>Manutenção (%)</label>
+              <input id="manutencao_percent" inputmode="decimal" value="6.5" />
+            </div>
+
+            <div>
+              <label>Diesel (R$/L)</label>
+              <input id="diesel_preco_litro" inputmode="decimal" value="6.17" />
+            </div>
+
+            <div>
+              <label>Pedágio total (R$) (ida+volta)</label>
+              <input id="pedagio_total" readonly />
+            </div>
+
+            <div>
+              <label>Combustível (R$)</label>
+              <input id="combustivel_valor" readonly />
+            </div>
+
+            <div class="span-2">
+              <label>Líquido (R$) / Margem líquida por KM</label>
+              <input id="liquido_margem" readonly />
+            </div>
+
             <div>
               <label>Valor Saída</label>
               <input id="saida" inputmode="decimal" placeholder="200" />
@@ -332,8 +229,8 @@
             </div>
 
             <div>
-              <label>KM</label>
-              <input id="km" inputmode="decimal" placeholder="Ex.: 35.4" />
+              <label>KM (auto)</label>
+              <input id="km" inputmode="decimal" placeholder="0.0" />
             </div>
 
             <div>
@@ -343,12 +240,8 @@
                 <option>utilitario</option>
                 <option>medio</option>
                 <option>pesado</option>
+                <option>super</option>
               </select>
-            </div>
-
-            <div class="span-2">
-              <label>Veículo</label>
-              <input id="veiculo" placeholder="Ex.: Jeep Compass" />
             </div>
 
             <div>
@@ -356,19 +249,19 @@
               <input id="placa" placeholder="ABC1D23" />
             </div>
 
-            <div>
+            <div class="span-2">
               <label>Origem (Coleta)</label>
-              <input id="origem" placeholder="Rua, número, bairro, cidade" />
+              <input id="origem" placeholder="Digite e escolha uma sugestão..." autocomplete="off" />
             </div>
 
             <div class="span-2">
               <label>Destino</label>
-              <input id="destino" placeholder="Rua, número, bairro, cidade" />
+              <input id="destino" placeholder="Digite e escolha uma sugestão..." autocomplete="off" />
             </div>
           </div>
 
           <div class="row-actions">
-            <button class="btn" id="btnCalcular" type="button">Calcular valor</button>
+            <button class="btn" id="btnCalcular" type="button">Recalcular</button>
             <button class="btn secondary" id="btnLimpar" type="button">Limpar</button>
             <button class="btn secondary" id="btnRecarregar" type="button">Recarregar listas</button>
           </div>
@@ -376,8 +269,9 @@
 
         <div class="summary">
           <div>
-            <div class="hint">Total calculado</div>
+            <div class="hint">Total bruto</div>
             <div class="price" id="valorFinal">R$ 0,00</div>
+            <div class="hint" id="subResumo"></div>
           </div>
           <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
             <div class="status" id="statusBox">Pronto.</div>
@@ -386,51 +280,26 @@
         </div>
       </div>
 
-      <!-- INFO / MAPA -->
+      <!-- MAPA -->
       <div class="card">
         <div class="head">
           <div>
-            <h2>Mapa & Notas</h2>
-            <small>Autocomplete + rota + KM automático</small>
+            <h2>Mapa</h2>
+            <small>Google Maps • rota 4 pernas</small>
           </div>
         </div>
 
         <div class="body">
-          <div class="status">
-            ✅ Base vem de <b>bases</b> via <code>/bases</code><br/>
-            ✅ Clientes vêm de <b>clientes</b> via <code>/clientes</code><br/>
-            ✅ Salva em <code>POST /orcamento</code><br/>
-            ✅ KM automático via <code>POST /rota</code> (backend seguro)<br/>
+          <div class="status" id="mapHint">
+            Selecione base e escolha origem/destino nas sugestões.
           </div>
 
           <div style="height:12px"></div>
-
-          <div class="status danger" id="histWarn" style="display:none;">
-            Histórico não carregou. Verifique se existe endpoint <b>GET /orcamentos</b>.
-          </div>
-
-          <div style="height:12px"></div>
-
-          <div class="status">
-            <b>Mapa</b><br/>
-            Selecione a Base e escolha Origem/Destino no autocomplete.
-          </div>
-
-          <div style="height:12px"></div>
-
-          <div id="map" style="
-            width:100%;
-            height:360px;
-            border-radius:16px;
-            border:1px solid rgba(255,255,255,.08);
-            overflow:hidden;
-            background:rgba(0,0,0,.2);
-          "></div>
-
+          <div id="map"></div>
           <div style="height:12px"></div>
 
           <div class="hint">
-            Dica: se a tela “não atualizar”, use Ctrl+Shift+R (hard refresh).
+            Dica: se “não atualizar”, use Ctrl+Shift+R.
           </div>
         </div>
       </div>
@@ -441,21 +310,22 @@
       <div class="head">
         <div>
           <h2>Histórico de orçamentos</h2>
-          <small>Últimos registros salvos</small>
+          <small>Mostra bruto, pedágio, combustível, líquido e margem/km</small>
         </div>
-        <span class="badge" id="histCount">0 itens</span>
+        <span class="pill" id="histCount">0 itens</span>
       </div>
 
       <div class="body">
         <div class="toolbar">
           <div class="left">
-            <input id="filtroTexto" placeholder="Filtrar: cliente/placa/veículo/origem/destino..." style="min-width:320px;" />
+            <input id="filtroTexto" placeholder="Filtrar..." style="min-width:320px;" />
             <select id="filtroCategoria" style="width:180px;">
               <option value="">Todas categorias</option>
               <option value="leve">leve</option>
               <option value="utilitario">utilitario</option>
               <option value="medio">medio</option>
               <option value="pesado">pesado</option>
+              <option value="super">super</option>
             </select>
           </div>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -471,23 +341,23 @@
                 <th>Data</th>
                 <th>Base</th>
                 <th>Cliente</th>
-                <th>Categoria</th>
                 <th>Veículo</th>
-                <th>Placa</th>
                 <th>KM</th>
-                <th>Total</th>
+                <th>Bruto</th>
+                <th>Pedágio</th>
+                <th>Comb.</th>
+                <th>Manut.</th>
+                <th>Coop.</th>
+                <th>Líquido</th>
+                <th>R$/KM</th>
                 <th>Origem</th>
                 <th>Destino</th>
               </tr>
             </thead>
             <tbody id="histBody">
-              <tr><td colspan="10" style="color:rgba(232,236,255,.6);">Carregando...</td></tr>
+              <tr><td colspan="14" style="color:rgba(232,236,255,.6);">Carregando...</td></tr>
             </tbody>
           </table>
-        </div>
-
-        <div class="hint" style="margin-top:10px;">
-          Se a tabela ficar vazia, é porque ainda não existem registros ou o endpoint do histórico está diferente.
         </div>
       </div>
     </div>
@@ -496,282 +366,18 @@
   <script>
     let clientes = [];
     let bases = [];
+    let veiculos = [];
     let historico = [];
     let histTimer = null;
 
     const el = (id) => document.getElementById(id);
 
-    // ========== INIT ==========
-    el("cliente").addEventListener("change", mostrarParametrosCliente);
-    el("btnCalcular").addEventListener("click", calcularValor);
-    el("btnSalvar").addEventListener("click", salvar);
-
-    el("btnLimpar").addEventListener("click", limparFormulario);
-    el("btnRecarregar").addEventListener("click", async () => {
-      await carregarBases();
-      await carregarClientes();
-      setStatus("Listas recarregadas.");
-      // recalcula rota/km quando recarrega bases
-      if (window.google && typeof initMaps === "function" && gDirectionsService) agendarAtualizacaoRota();
-    });
-
-    el("btnAtualizarHist").addEventListener("click", carregarHistorico);
-    el("btnLimparFiltros").addEventListener("click", () => {
-      el("filtroTexto").value = "";
-      el("filtroCategoria").value = "";
-      renderHistorico();
-    });
-
-    el("filtroTexto").addEventListener("input", renderHistorico);
-    el("filtroCategoria").addEventListener("change", renderHistorico);
-
-    (async function init(){
-      await carregarBases();
-      await carregarClientes();
-      calcularValor();
-      await carregarHistorico();
-      iniciarAutoRefreshHistorico();
-    })();
-
-    // =============================
-    // AUTO-REFRESH HISTÓRICO
-    // =============================
-    function iniciarAutoRefreshHistorico(){
-      if(histTimer) clearInterval(histTimer);
-
-      histTimer = setInterval(() => carregarHistorico(), 10000);
-
-      document.addEventListener("visibilitychange", () => {
-        if (!document.hidden) carregarHistorico();
-      });
-
-      window.addEventListener("focus", () => carregarHistorico());
-    }
-
-    // ========== HELPERS ==========
-    function setStatus(msg, type="ok"){
-      el("statusBox").textContent = msg;
-      el("statusBox").classList.remove("danger");
-      if(type === "danger") el("statusBox").classList.add("danger");
-    }
-
-    function moneyBR(v){
-      const n = Number(v || 0);
-      return n.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
-    }
-
-    function fmtDate(dt){
-      if(!dt) return "";
-      const d = new Date(dt);
-      if(Number.isNaN(d.getTime())) return "";
-      return d.toLocaleString("pt-BR", { dateStyle:"short", timeStyle:"short" });
-    }
-
-    // ========== LOAD BASES ==========
-    async function carregarBases(){
-      try{
-        const r = await fetch("/bases", { cache: "no-store" });
-        const d = await r.json();
-        bases = Array.isArray(d) ? d : [];
-
-        const select = el("base");
-        const current = select.value;
-        select.innerHTML = "";
-
-        bases.forEach(b => {
-          const op = document.createElement("option");
-          op.value = b.id;
-          op.textContent = b.nome;
-          select.appendChild(op);
-        });
-
-        // tenta manter selecionada
-        if (current) select.value = current;
-
-        // quando muda base, recalcula rota/km
-        select.onchange = () => {
-          if (window.agendarAtualizacaoRota) agendarAtualizacaoRota();
-        };
-        // após preencher o select e setar o value...
-        if (window.agendarAtualizacaoRota) agendarAtualizacaoRota();
-              }catch(err){
-                console.error("Erro ao carregar bases:", err);
-                setStatus("Erro ao carregar bases.", "danger");
-      }
-    }
-
-    // ========== LOAD CLIENTES ==========
-    async function carregarClientes(){
-      try{
-        const r = await fetch("/clientes", { cache: "no-store" });
-        const d = await r.json();
-        clientes = Array.isArray(d) ? d : [];
-
-        const select = el("cliente");
-        select.innerHTML = "";
-        clientes.forEach(c => {
-          const op = document.createElement("option");
-          op.value = c.id;
-          op.textContent = c.nome;
-          select.appendChild(op);
-        });
-
-        mostrarParametrosCliente();
-      }catch(err){
-        console.error("Erro ao carregar clientes:", err);
-        setStatus("Erro ao carregar clientes.", "danger");
-      }
-    }
-
-    function mostrarParametrosCliente(){
-      const id = el("cliente").value;
-      const c = clientes.find(x => String(x.id) === String(id));
-      if(!c) return;
-
-      el("saida").value = c.valor_saida ?? "";
-      el("km_valor").value = c.valor_km ?? "";
-      calcularValor();
-    }
-
-    // ========== CALC ==========
-    function calcularValor(){
-      const saida = Number(el("saida").value || 0);
-      const valor_km = Number(el("km_valor").value || 0);
-      const km = Number(el("km").value || 0);
-      const total = saida + (km * valor_km);
-
-      el("valorFinal").textContent = moneyBR(total);
-      return total;
-    }
-
-    function limparFormulario(){
-      el("km").value = "";
-      el("veiculo").value = "";
-      el("placa").value = "";
-      el("origem").value = "";
-      el("destino").value = "";
-      el("categoria").value = "leve";
-      el("valorFinal").textContent = moneyBR(0);
-      setStatus("Formulário limpo.");
-      if (window.agendarAtualizacaoRota) agendarAtualizacaoRota();
-    }
-
-    // ========== SAVE ==========
-    
-    async function salvar(){
-    
-        if(!el("cliente").value){
-        setStatus("Selecione um cliente antes de salvar.", "danger");
-         return;
-}
-      try{
-        const total = calcularValor();
-
-        const dados = {
-          cliente_id: el("cliente").value,
-          base_id: el("base").value,
-          valor_saida: el("saida").value,
-          valor_km: el("km_valor").value,
-          km: el("km").value,
-          veiculo: el("veiculo").value,
-          categoria: el("categoria").value,
-          placa: el("placa").value,
-          origem: el("origem").value,
-          destino: el("destino").value,
-          valor_total: total
-        };
-
-        const r = await fetch("/orcamento", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify(dados)
-        });
-
-        const respText = await r.text();
-        console.log("POST /orcamento status:", r.status);
-        console.log("POST /orcamento resposta:", respText);
-
-        if(!r.ok){
-          setStatus("Erro ao salvar orçamento.", "danger");
-          alert("Erro ao salvar. Veja o console (F12).");
-          return;
-        }
-
-        setStatus("Orçamento salvo com sucesso ✅");
-        await carregarHistorico();
-      }catch(err){
-        console.error("Erro ao salvar:", err);
-        setStatus("Erro ao salvar orçamento.", "danger");
-        alert("Erro ao salvar orçamento.");
-      }
-    }
-
-    // ========== HISTÓRICO ==========
-    async function carregarHistorico(){
-      try{
-        el("histWarn").style.display = "none";
-        const r = await fetch(`/orcamentos?_ts=${Date.now()}`, { cache: "no-store" });
-        const d = await r.json();
-
-        historico = Array.isArray(d) ? d : [];
-        el("histCount").textContent = `${historico.length} itens`;
-        renderHistorico();
-      }catch(err){
-        console.error("Erro ao carregar histórico:", err);
-        el("histWarn").style.display = "block";
-        el("histBody").innerHTML = `<tr><td colspan="10" style="color:rgba(232,236,255,.6);">Não foi possível carregar o histórico.</td></tr>`;
-      }
-    }
-
-    function renderHistorico(){
-      const q = (el("filtroTexto").value || "").toLowerCase().trim();
-      const cat = el("filtroCategoria").value || "";
-
-      const rows = historico.filter(o => {
-        if(cat && String(o.categoria || "").toLowerCase() !== cat) return false;
-        if(!q) return true;
-
-        const hay = [
-          o.cliente_nome, o.cliente,
-          o.base_nome, o.base,
-          o.placa, o.veiculo, o.origem, o.destino, o.categoria, o.status
-        ].filter(Boolean).join(" ").toLowerCase();
-
-        return hay.includes(q);
-      });
-
-      el("histCount").textContent = `${rows.length} itens`;
-
-      if(rows.length === 0){
-        el("histBody").innerHTML = `<tr><td colspan="10" style="color:rgba(232,236,255,.6);">Sem registros para exibir.</td></tr>`;
-        return;
-      }
-
-      el("histBody").innerHTML = rows.map(o => `
-        <tr>
-          <td>${fmtDate(o.created_at || o.data || o.createdAt)}</td>
-          <td>${o.base_nome ?? o.base ?? ""}</td>
-          <td>${o.cliente_nome ?? o.cliente ?? ""}</td>
-          <td>${o.categoria ?? ""}</td>
-          <td>${o.veiculo ?? ""}</td>
-          <td>${o.placa ?? ""}</td>
-          <td>${o.km ?? ""}</td>
-          <td>${moneyBR(o.valor_total ?? o.valor ?? o.total ?? 0)}</td>
-          <td title="${(o.origem ?? "")}">${(o.origem ?? "").slice(0,40)}</td>
-          <td title="${(o.destino ?? "")}">${(o.destino ?? "").slice(0,40)}</td>
-        </tr>
-      `).join("");
-    }
-
-    // =============================
-    // GOOGLE MAPS (FRONT: mapa + autocomplete)
-    // KM via backend /rota (seguro)
-    // =============================
+    // ====== GOOGLE MAPS ======
     let gmap, gDirectionsService, gDirectionsRenderer;
     let gAutoOrigem, gAutoDestino;
     let rotaTimer = null;
 
-    function initMaps() {
+    function initGoogle(){
       gmap = new google.maps.Map(document.getElementById("map"), {
         center: { lat: -23.3649, lng: -46.7406 },
         zoom: 12,
@@ -786,106 +392,436 @@
         suppressMarkers: false
       });
 
-      const inputOrigem = document.getElementById("origem");
-      const inputDestino = document.getElementById("destino");
+      // Autocomplete
+      const inputOrigem = el("origem");
+      const inputDestino = el("destino");
 
       gAutoOrigem = new google.maps.places.Autocomplete(inputOrigem, {
         types: ["address"],
         componentRestrictions: { country: "br" }
       });
-
       gAutoDestino = new google.maps.places.Autocomplete(inputDestino, {
         types: ["address"],
         componentRestrictions: { country: "br" }
       });
 
-      gAutoOrigem.addListener("place_changed", agendarAtualizacaoRota);
-      gAutoDestino.addListener("place_changed", agendarAtualizacaoRota);
+      gAutoOrigem.addListener("place_changed", scheduleRota);
+      gAutoDestino.addListener("place_changed", scheduleRota);
 
-      document.getElementById("base").addEventListener("change", agendarAtualizacaoRota);
-      inputOrigem.addEventListener("blur", agendarAtualizacaoRota);
-      inputDestino.addEventListener("blur", agendarAtualizacaoRota);
-      // ADICIONAR:
-      inputOrigem.addEventListener("input", agendarAtualizacaoRota);
-      inputDestino.addEventListener("input", agendarAtualizacaoRota);
-      agendarAtualizacaoRota();
+      // Debounce pra digitação manual
+      inputOrigem.addEventListener("input", scheduleRota);
+      inputDestino.addEventListener("input", scheduleRota);
+      inputOrigem.addEventListener("blur", scheduleRota);
+      inputDestino.addEventListener("blur", scheduleRota);
+
+      el("base").addEventListener("change", scheduleRota);
+      el("veiculo_id").addEventListener("change", scheduleRota);
+
+      scheduleRota();
     }
 
-    function getBaseSelecionada() {
-      const baseId = document.getElementById("base").value;
-      const b = (bases || []).find(x => String(x.id) === String(baseId));
-      return b || null;
+    function scheduleRota(){
+      if(rotaTimer) clearTimeout(rotaTimer);
+      rotaTimer = setTimeout(() => atualizarRota(), 550);
     }
 
-    function agendarAtualizacaoRota() {
-      if (rotaTimer) clearTimeout(rotaTimer);
-      rotaTimer = setTimeout(() => atualizarMapaEKm(), 350);
+    function getBaseSelecionada(){
+      const baseId = el("base").value;
+      return (bases || []).find(b => String(b.id) === String(baseId)) || null;
     }
 
-    async function atualizarMapaEKm() {
-      try {
+    async function atualizarRota(){
+      try{
         const b = getBaseSelecionada();
-        const origem = (document.getElementById("origem").value || "").trim();
-        const destino = (document.getElementById("destino").value || "").trim();
+        const origem = (el("origem").value || "").trim();
+        const destino = (el("destino").value || "").trim();
+        const v = getVeiculoSelecionado();
 
-        if (!b?.endereco || !origem || !destino) return;
+        if(!b?.endereco || !origem || !destino) return;
 
-        desenharRotaNoMapa(b.endereco, origem, destino);
-        await calcularKmViaBackend(b.id, origem, destino);
-      } catch (e) {
+        setStatus("Calculando rota e KM...");
+
+        // 1) Desenha rota no MAPA (4 pernas)
+        const request = {
+          origin: b.endereco,
+          destination: b.endereco,
+          waypoints: [
+            { location: origem, stopover: true },
+            { location: destino, stopover: true }
+          ],
+          optimizeWaypoints: false,
+          travelMode: google.maps.TravelMode.DRIVING
+        };
+
+        gDirectionsService.route(request, async (result, status) => {
+          if(status !== "OK"){
+            console.error("Directions error:", status);
+            setStatus("Não foi possível calcular rota no Maps.", "danger");
+            return;
+          }
+
+          gDirectionsRenderer.setDirections(result);
+
+          const legs = result.routes?.[0]?.legs || [];
+          const meters = legs.reduce((sum, leg) => sum + (leg.distance?.value || 0), 0);
+          const kmTotal = meters / 1000;
+
+          el("km").value = kmTotal.toFixed(1);
+
+          // 2) Pedágio: Google Directions JS NÃO retorna custo.
+          // Se você já tem backend /rota que calcula pedagio_total, usamos ele.
+          // Se não tiver, fica 0 por enquanto.
+          let pedagio = 0;
+          try{
+            if(v?.eixos){
+              const r = await fetch("/rota", {
+                method:"POST",
+                headers:{ "Content-Type":"application/json" },
+                body: JSON.stringify({
+                  base_id: b.id,
+                  origem,
+                  destino,
+                  eixos: v.eixos
+                })
+              });
+              const j = await r.json().catch(()=> ({}));
+              if(r.ok){
+                if(Number.isFinite(Number(j.pedagio_total))) pedagio = Number(j.pedagio_total);
+                // se backend devolver km_total, pode usar como “fonte oficial”
+                if(Number.isFinite(Number(j.km_total))) el("km").value = Number(j.km_total).toFixed(1);
+              }else{
+                console.warn("Pedágio via /rota falhou:", j);
+              }
+            }
+          }catch(e){
+            console.warn("Pedágio via /rota falhou:", e);
+          }
+
+          el("pedagio_total").value = pedagio.toFixed(2);
+
+          recomputarTudo();
+          setStatus(`KM: ${Number(el("km").value).toFixed(1)} • Pedágio: ${moneyBR(pedagio)} ✅`);
+        });
+
+      }catch(e){
         console.error(e);
-        setStatus("Erro ao atualizar rota/KM.", "danger");
+        setStatus("Erro ao atualizar rota.", "danger");
       }
     }
 
-    function desenharRotaNoMapa(baseEndereco, origem, destino) {
-      if (!gDirectionsService || !gDirectionsRenderer) return;
+    // ====== INIT ======
+    el("cliente").addEventListener("change", () => { mostrarParametrosCliente(); recomputarTudo(); scheduleRota(); });
+    el("btnCalcular").addEventListener("click", () => { recomputarTudo(); scheduleRota(); });
+    el("btnSalvar").addEventListener("click", salvar);
+    el("btnLimpar").addEventListener("click", limparFormulario);
 
-      const request = {
-        origin: baseEndereco,
-        destination: baseEndereco,
-        waypoints: [
-          { location: origem, stopover: true },
-          { location: destino, stopover: true }
-        ],
-        optimizeWaypoints: false,
-        travelMode: google.maps.TravelMode.DRIVING
-      };
+    el("btnRecarregar").addEventListener("click", async () => {
+      await carregarBases();
+      await carregarClientes();
+      await carregarVeiculos();
+      setStatus("Listas recarregadas.");
+      scheduleRota();
+    });
 
-      gDirectionsService.route(request, (result, status) => {
-        if (status !== "OK") {
-          console.error("Directions (front) error:", status);
-          setStatus("Não foi possível desenhar a rota no mapa.", "danger");
-          return;
-        }
-        gDirectionsRenderer.setDirections(result);
+    el("btnAtualizarHist").addEventListener("click", carregarHistorico);
+    el("btnLimparFiltros").addEventListener("click", () => {
+      el("filtroTexto").value = "";
+      el("filtroCategoria").value = "";
+      renderHistorico();
+    });
+    el("filtroTexto").addEventListener("input", renderHistorico);
+    el("filtroCategoria").addEventListener("change", renderHistorico);
+
+    (async function init(){
+      await carregarBases();
+      await carregarClientes();
+      await carregarVeiculos();
+      await carregarHistorico();
+      iniciarAutoRefreshHistorico();
+      mostrarParametrosCliente();
+      recomputarTudo();
+
+      // init do google acontece no callback do script (window.initGoogle)
+      // mas se já carregou, chama direto:
+      if(window.google?.maps) initGoogle();
+    })();
+
+    function iniciarAutoRefreshHistorico(){
+      if(histTimer) clearInterval(histTimer);
+      histTimer = setInterval(() => carregarHistorico(), 10000);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) carregarHistorico(); });
+      window.addEventListener("focus", () => carregarHistorico());
+    }
+
+    // ====== HELPERS ======
+    function setStatus(msg, type="ok"){
+      el("statusBox").textContent = msg;
+      el("statusBox").classList.remove("danger");
+      if(type === "danger") el("statusBox").classList.add("danger");
+    }
+    function moneyBR(v){
+      const n = Number(v || 0);
+      return n.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+    }
+    function num(v){ return Number(String(v ?? "").replace(",", ".")) || 0; }
+    function fmtDate(dt){
+      if(!dt) return "";
+      const d = new Date(dt);
+      if(Number.isNaN(d.getTime())) return "";
+      return d.toLocaleString("pt-BR", { dateStyle:"short", timeStyle:"short" });
+    }
+
+    // ====== LOADERS ======
+    async function carregarBases(){
+      const r = await fetch("/bases", { cache: "no-store" });
+      const d = await r.json();
+      bases = Array.isArray(d) ? d : [];
+      const select = el("base");
+      const current = select.value;
+      select.innerHTML = "";
+      bases.forEach(b => {
+        const op = document.createElement("option");
+        op.value = b.id;
+        op.textContent = b.nome;
+        select.appendChild(op);
+      });
+      if (current) select.value = current;
+    }
+
+    async function carregarClientes(){
+      const r = await fetch("/clientes", { cache: "no-store" });
+      const d = await r.json();
+      clientes = Array.isArray(d) ? d : [];
+      const select = el("cliente");
+      select.innerHTML = "";
+      clientes.forEach(c => {
+        const op = document.createElement("option");
+        op.value = c.id;
+        op.textContent = c.nome;
+        select.appendChild(op);
       });
     }
 
-    async function calcularKmViaBackend(base_id, origem, destino) {
-      const r = await fetch("/rota", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ base_id, origem, destino })
+    async function carregarVeiculos(){
+      const r = await fetch("/veiculos", { cache: "no-store" });
+      const d = await r.json();
+      veiculos = Array.isArray(d) ? d : [];
+      const select = el("veiculo_id");
+      const current = select.value;
+      select.innerHTML = "";
+      veiculos.forEach(v => {
+        const op = document.createElement("option");
+        op.value = v.id;
+        op.textContent = `${v.nome} • ${v.km_por_litro} km/L • ${v.eixos} eixos • ${v.classe}`;
+        select.appendChild(op);
+      });
+      if (current) select.value = current;
+    }
+
+    function mostrarParametrosCliente(){
+      const id = el("cliente").value;
+      const c = clientes.find(x => String(x.id) === String(id));
+      if(!c) return;
+      el("saida").value = c.valor_saida ?? "";
+      el("km_valor").value = c.valor_km ?? "";
+    }
+
+    // ====== CÁLCULOS ======
+    function calcularBruto(){
+      const saida = num(el("saida").value);
+      const valor_km = num(el("km_valor").value);
+      const km = num(el("km").value);
+      return saida + (km * valor_km);
+    }
+
+    function getVeiculoSelecionado(){
+      const id = el("veiculo_id").value;
+      return veiculos.find(v => String(v.id) === String(id));
+    }
+
+    function recomputarTudo(){
+      const bruto = calcularBruto();
+      el("valorFinal").textContent = moneyBR(bruto);
+
+      const manutPct = num(el("manutencao_percent").value || 6.5);
+      const diesel = num(el("diesel_preco_litro").value || 6.17);
+      const km = num(el("km").value);
+
+      const v = getVeiculoSelecionado();
+      const kmPorLitro = num(v?.km_por_litro);
+
+      const pedagio = num(el("pedagio_total").value);
+
+      const manut = bruto * (manutPct/100);
+      const combust = kmPorLitro > 0 ? (km / kmPorLitro) * diesel : 0;
+
+      el("combustivel_valor").value = moneyBR(combust);
+
+      const c = clientes.find(x => String(x.id) === String(el("cliente").value));
+      const coopPct = (c?.tipo === "cooperativa") ? 20 : 0;
+      const coop = bruto * (coopPct/100);
+
+      const liquido = bruto - pedagio - manut - combust - coop;
+      const margemKm = km > 0 ? (liquido / km) : 0;
+
+      el("liquido_margem").value = `${moneyBR(liquido)}  •  ${moneyBR(margemKm)}/km`;
+      el("subResumo").textContent =
+        `Pedágio: ${moneyBR(pedagio)} • Manut.: ${moneyBR(manut)} • Comb.: ${moneyBR(combust)} • Coop.: ${moneyBR(coopPct ? coop : 0)}`;
+
+      return { bruto, manutPct, diesel, kmPorLitro, pedagio };
+    }
+
+    // ====== SAVE ======
+    async function salvar(){
+      try{
+        const clienteId = el("cliente").value;
+        const baseId = el("base").value;
+        const veiculoId = el("veiculo_id").value;
+
+        if(!clienteId) return setStatus("Selecione um cliente.", "danger");
+        if(!baseId) return setStatus("Selecione uma base.", "danger");
+        if(!veiculoId) return setStatus("Selecione um veículo.", "danger");
+
+        const origem = (el("origem").value || "").trim();
+        const destino = (el("destino").value || "").trim();
+        if(!origem || !destino) return setStatus("Informe origem e destino.", "danger");
+
+        const custos = recomputarTudo();
+
+        const payload = {
+          cliente_id: clienteId,
+          base_id: baseId,
+          veiculo_id: veiculoId,
+
+          valor_saida: num(el("saida").value),
+          valor_km: num(el("km_valor").value),
+
+          km_total: num(el("km").value),
+
+          categoria: el("categoria").value,
+          placa: el("placa").value,
+
+          origem,
+          destino,
+
+          manutencao_percent: num(el("manutencao_percent").value || 6.5),
+          diesel_preco_litro: num(el("diesel_preco_litro").value || 6.17),
+          km_por_litro: custos.kmPorLitro,
+
+          pedagio_total: num(el("pedagio_total").value),
+        };
+
+        const r = await fetch("/orcamento", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const j = await r.json().catch(()=> ({}));
+        if(!r.ok){
+          console.error(j);
+          setStatus(j.error || "Erro ao salvar.", "danger");
+          alert("Erro ao salvar. Veja console (F12).");
+          return;
+        }
+
+        setStatus("Orçamento salvo ✅");
+        await carregarHistorico();
+      }catch(e){
+        console.error(e);
+        setStatus("Erro ao salvar.", "danger");
+      }
+    }
+
+    function limparFormulario(){
+      el("placa").value = "";
+      el("origem").value = "";
+      el("destino").value = "";
+      el("km").value = "";
+      el("pedagio_total").value = "";
+      el("combustivel_valor").value = "";
+      el("liquido_margem").value = "";
+      setStatus("Formulário limpo.");
+      recomputarTudo();
+      scheduleRota();
+    }
+
+    // ====== HISTÓRICO ======
+    async function carregarHistorico(){
+  try{
+    const r = await fetch(`/orcamentos?_ts=${Date.now()}`, { cache:"no-store" });
+
+    if(!r.ok){
+      const txt = await r.text().catch(()=> "");
+      console.error("GET /orcamentos falhou:", r.status, txt);
+      historico = [];
+      el("histCount").textContent = `0 itens`;
+      el("histBody").innerHTML =
+        `<tr><td colspan="14" style="color:rgba(232,236,255,.6);">Histórico indisponível (${r.status}).</td></tr>`;
+      return;
+    }
+
+    const d = await r.json().catch(()=> []);
+    historico = Array.isArray(d) ? d : [];
+    el("histCount").textContent = `${historico.length} itens`;
+    renderHistorico();
+  }catch(e){
+    console.error(e);
+    el("histBody").innerHTML =
+      `<tr><td colspan="14" style="color:rgba(232,236,255,.6);">Erro ao carregar histórico.</td></tr>`;
+  }
+}
+
+    function renderHistorico(){
+      const q = (el("filtroTexto").value || "").toLowerCase().trim();
+      const cat = el("filtroCategoria").value || "";
+
+      const rows = historico.filter(o => {
+        if(cat && String(o.categoria || "").toLowerCase() !== cat) return false;
+        if(!q) return true;
+        const hay = [
+          o.cliente_nome, o.cliente,
+          o.base_nome, o.base,
+          o.veiculo,
+          o.placa, o.origem, o.destino, o.categoria, o.status
+        ].filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(q);
       });
 
-      const j = await r.json().catch(() => ({}));
+      el("histCount").textContent = `${rows.length} itens`;
 
-      if (!r.ok) {
-        console.error("Erro /rota:", j);
-        setStatus(j.erro || "Erro ao calcular KM.", "danger");
+      if(!rows.length){
+        el("histBody").innerHTML = `<tr><td colspan="14" style="color:rgba(232,236,255,.6);">Sem registros.</td></tr>`;
         return;
       }
 
-      document.getElementById("km").value = Number(j.km_total || 0).toFixed(1);
-      calcularValor();
-      setStatus(`KM automático: ${Number(j.km_total || 0).toFixed(1)} km ✅`);
+      el("histBody").innerHTML = rows.map(o => `
+        <tr>
+          <td>${fmtDate(o.created_at || o.data || o.createdAt)}</td>
+          <td>${o.base_nome ?? ""}</td>
+          <td>${o.cliente_nome ?? o.cliente ?? ""}</td>
+          <td>${o.veiculo ?? ""}</td>
+          <td>${(o.km_total ?? o.km ?? "")}</td>
+          <td>${moneyBR(o.valor_bruto ?? o.valor_total ?? o.valor ?? 0)}</td>
+          <td>${moneyBR(o.pedagio_total ?? 0)}</td>
+          <td>${moneyBR(o.combustivel_valor ?? 0)}</td>
+          <td>${moneyBR(o.manutencao_valor ?? 0)}</td>
+          <td>${moneyBR(o.cooperativa_valor ?? 0)}</td>
+          <td>${moneyBR(o.valor_liquido ?? 0)}</td>
+          <td>${moneyBR(o.margem_liquida_km ?? 0)}</td>
+          <td title="${(o.origem ?? "")}">${(o.origem ?? "").slice(0,26)}</td>
+          <td title="${(o.destino ?? "")}">${(o.destino ?? "").slice(0,26)}</td>
+        </tr>
+      `).join("");
     }
+
+    // expõe pro callback do google
+    window.initGoogle = initGoogle;
   </script>
 
-  <!-- GOOGLE MAPS (KEY FRONT) -->
+  <!-- Google Maps + Places (KEY NO FRONT) -->
   <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKkex4PTmvzwa-xuZawwmnnaZrpP5Z6ug&libraries=places&callback=initMaps"
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKkex4PTmvzwa-xuZawwmnnaZrpP5Z6ug&libraries=places&callback=initGoogle"
     async
     defer
   ></script>
