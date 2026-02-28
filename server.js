@@ -5,6 +5,7 @@ import { supabase } from "./supabase.js";
 
 const app = express();
 
+app.use(cors({ origin: ["https://samguinchos.onrender.com"], credentials: true }));
 app.get("/health", (req, res) => res.status(200).send("ok"));
 
 app.use(cors());
@@ -449,8 +450,6 @@ app.post("/rota", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+app.listen(PORT, "0.0.0.0", () => { console.log(`Servidor rodando na porta ${PORT}`);
 
 });

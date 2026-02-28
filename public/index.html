@@ -372,6 +372,7 @@
 
     const el = (id) => document.getElementById(id);
 
+    let rotaReqId = 0;
     // ====== GOOGLE MAPS ======
     let gmap, gDirectionsService, gDirectionsRenderer;
     let gAutoOrigem, gAutoDestino;
@@ -432,16 +433,30 @@
 
 
     
-    async function atualizarRota(){
-  try{
-    const myReq = ++rotaReqId;
+    async function atualizarRota() {
+  const myReq = ++rotaReqId;
 
+  try {
     const b = getBaseSelecionada();
     const origem = (el("origem").value || "").trim();
     const destino = (el("destino").value || "").trim();
     const v = getVeiculoSelecionado();
 
-    if(!b?.endereco || origem.length < 6 || destino.length < 6) return;
+    // validações rápidas
+    if (!b?.id || !b?.endereco) return;
+    if (origem.length < 6 || destino.length < 6) return;
+
+    // se Maps não carregou (ex: RefererNotAllowed), não quebra o app
+    if (!window.google?.maps) {
+      setStatus("Google Maps não carregou (verifique a API key / domínio autorizado).", "danger");
+      return;
+    }
+
+    // DirectionsService/Renderer precisam estar prontos
+    if (!gDirectionsService || !gDirectionsRenderer) {
+      setStatus("Maps ainda inicializando...", "warning");
+      return;
+    }
 
     setStatus("Calculando rota e KM...");
 
@@ -457,54 +472,82 @@
     };
 
     gDirectionsService.route(request, async (result, status) => {
-      // se outra requisição já começou depois, ignora esta
+      // ignora resposta antiga
       if (myReq !== rotaReqId) return;
 
-      if(status !== "OK"){
-        console.error("Directions error:", status);
+      // se usuário apagou/alterou campos enquanto calculava, evita atualizar UI com dado velho
+      const origemNow = (el("origem").value || "").trim();
+      const destinoNow = (el("destino").value || "").trim();
+      if (origemNow !== origem || destinoNow !== destino) return;
+
+      if (status !== "OK" || !result?.routes?.length) {
+        console.error("Directions error:", status, result);
         setStatus("Não foi possível calcular rota no Maps.", "danger");
         return;
       }
 
-      gDirectionsRenderer.setDirections(result);
+      // renderiza rota no mapa
+      try {
+        gDirectionsRenderer.setDirections(result);
+      } catch (e) {
+        console.warn("Falha ao renderizar rota:", e);
+      }
 
-      const legs = result.routes?.[0]?.legs || [];
-      const meters = legs.reduce((sum, leg) => sum + (leg.distance?.value || 0), 0);
-      const kmTotal = meters / 1000;
+      // calcula KM pelo Maps (fallback caso /rota falhe)
+      const legs = result.routes[0]?.legs || [];
+      const meters = legs.reduce((sum, leg) => sum + (Number(leg?.distance?.value) || 0), 0);
+      const kmTotalMaps = meters / 1000;
 
-      el("km").value = kmTotal.toFixed(1);
+      if (Number.isFinite(kmTotalMaps) && kmTotalMaps > 0) {
+        el("km").value = kmTotalMaps.toFixed(1);
+      }
 
-      // pedágio via backend
+      // pedágio via backend (/rota)
       let pedagio = 0;
-      try{
-        if(v?.eixos){
+
+      try {
+        // só chama se tiver eixos (do veículo)
+        if (v?.eixos) {
           const r = await fetch("/rota", {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ base_id: b.id, origem, destino, eixos: v.eixos })
           });
 
-          const j = await r.json().catch(()=> ({}));
-          if(r.ok){
-            if(Number.isFinite(Number(j.pedagio_total))) pedagio = Number(j.pedagio_total);
-            if(Number.isFinite(Number(j.km_total))) el("km").value = Number(j.km_total).toFixed(1);
-          }else{
+          const j = await r.json().catch(() => ({}));
+
+          // ignora resposta antiga se demorou
+          if (myReq !== rotaReqId) return;
+
+          if (r.ok) {
+            if (Number.isFinite(Number(j.pedagio_total))) {
+              pedagio = Number(j.pedagio_total);
+            }
+            if (Number.isFinite(Number(j.km_total))) {
+              el("km").value = Number(j.km_total).toFixed(1);
+            }
+          } else {
             console.warn("Pedágio via /rota falhou:", j);
+            // mantém pedagio 0 e km do Maps
           }
         }
-      }catch(e){
+      } catch (e) {
         console.warn("Pedágio via /rota falhou:", e);
       }
 
       el("pedagio_total").value = pedagio.toFixed(2);
 
+      // recalcula financeiro
       recomputarTudo();
-      setStatus(`KM: ${Number(el("km").value).toFixed(1)} • Pedágio: ${moneyBR(pedagio)} ✅`);
+
+      const kmFinal = Number(el("km").value) || 0;
+      setStatus(`KM: ${kmFinal.toFixed(1)} • Pedágio: ${moneyBR(pedagio)} ✅`);
     });
 
-  }catch(e){
+  } catch (e) {
     console.error(e);
-    setStatus("Erro ao atualizar rota.", "danger");
+    // só mostra erro se ainda for a requisição atual
+    if (myReq === rotaReqId) setStatus("Erro ao atualizar rota.", "danger");
   }
 }
     // ====== INIT ======
