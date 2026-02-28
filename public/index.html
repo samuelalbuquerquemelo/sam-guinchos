@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+window.rotaReqId = 0;
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -434,7 +435,9 @@
 
     
     async function atualizarRota() {
-  const myReq = ++rotaReqId;
+
+const myReq = ++window.rotaReqId;
+if (myReq !== window.rotaReqId) return;
 
   try {
     const b = getBaseSelecionada();
