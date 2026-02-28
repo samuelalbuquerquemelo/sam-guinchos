@@ -1,9 +1,15 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import crypto from "crypto";
 import { supabase } from "./supabase.js";
 
 const app = express();
+
+// ==============================
+// CONFIG
+// ==============================
+const AUTH_SECRET = process.env.AUTH_SECRET || "dev-secret-change-me";
 
 // ==============================
 // MIDDLEWARES
@@ -31,6 +37,112 @@ function isUUID(v) {
     .test(String(v || ""));
 }
 
+function normTel(v) {
+  return String(v || "").replace(/\D/g, "");
+}
+
+// Token simples assinado (HMAC)
+// token = base64url(payload).base64url(sig)
+function b64url(buf) {
+  return Buffer.from(buf).toString("base64")
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function signToken(payloadObj) {
+  const payload = b64url(JSON.stringify(payloadObj));
+  const sig = b64url(crypto.createHmac("sha256", AUTH_SECRET).update(payload).digest());
+  return `${payload}.${sig}`;
+}
+
+function verifyToken(token) {
+  try {
+    const [payload, sig] = String(token || "").split(".");
+    if (!payload || !sig) return null;
+    const expected = b64url(crypto.createHmac("sha256", AUTH_SECRET).update(payload).digest());
+    if (expected !== sig) return null;
+    const obj = JSON.parse(Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+    if (!obj?.id || !obj?.usuario) return null;
+    // exp opcional
+    if (obj.exp && Date.now() > obj.exp) return null;
+    return obj;
+  } catch {
+    return null;
+  }
+}
+
+function requireAuth(req, res, next) {
+  // libera health e login e assets
+  if (req.path === "/health") return next();
+  if (req.path.startsWith("/auth/")) return next();
+
+  // assets (js, css, imagens, html) podem carregar para mostrar login
+  // mas as APIs precisam de token
+  const isApi =
+    req.path.startsWith("/clientes") ||
+    req.path.startsWith("/cliente") ||
+    req.path.startsWith("/bases") ||
+    req.path.startsWith("/veiculos") ||
+    req.path.startsWith("/orcamentos") ||
+    req.path.startsWith("/orcamento") ||
+    req.path.startsWith("/rota");
+
+  if (!isApi) return next();
+
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const user = verifyToken(token);
+  if (!user) return res.status(401).json({ error: "Não autenticado" });
+
+  req.user = user;
+  return next();
+}
+
+app.use(requireAuth);
+
+// ==============================
+// AUTH
+// ==============================
+app.post("/auth/login", async (req, res) => {
+  try {
+    const { usuario, senha } = req.body || {};
+    if (!usuario || !senha) return res.status(400).json({ error: "Informe usuário e senha" });
+
+    // usa RPC criada no SQL: validar_operador
+    const { data, error } = await supabase.rpc("validar_operador", {
+      p_usuario: String(usuario),
+      p_senha: String(senha)
+    });
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row?.id) return res.status(401).json({ error: "Usuário ou senha inválidos" });
+
+    const token = signToken({
+      id: row.id,
+      usuario: row.usuario,
+      nome: row.nome,
+      exp: Date.now() + (1000 * 60 * 60 * 12) // 12h
+    });
+
+    return res.json({
+      ok: true,
+      token,
+      operador: { id: row.id, usuario: row.usuario, nome: row.nome }
+    });
+  } catch (e) {
+    return res.status(500).json({ error: String(e) });
+  }
+});
+
+app.get("/auth/me", async (req, res) => {
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const user = verifyToken(token);
+  if (!user) return res.status(401).json({ error: "Não autenticado" });
+  return res.json({ ok: true, user });
+});
+
 // ==============================
 // CLIENTES
 // ==============================
@@ -48,13 +160,61 @@ app.get("/clientes", async (req, res) => {
   }
 });
 
-app.post("/cliente", async (req, res) => {
+// Buscar cliente por telefone (chave)
+app.get("/cliente_por_telefone", async (req, res) => {
   try {
-    const dados = req.body;
+    const tel = normTel(req.query.telefone);
+    if (!tel || tel.length < 10) {
+      return res.status(400).json({ error: "telefone inválido" });
+    }
 
     const { data, error } = await supabase
       .from("clientes")
-      .insert([dados])
+      .select("*")
+      .eq("telefone_norm", tel)
+      .maybeSingle();
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    if (!data) return res.status(404).json({ error: "não encontrado" });
+
+    return res.json(data);
+  } catch (e) {
+    return res.status(500).json({ error: String(e) });
+  }
+});
+
+app.post("/cliente", async (req, res) => {
+  try {
+    const dados = req.body || {};
+    if (!dados.nome) return res.status(400).json({ error: "nome é obrigatório" });
+    if (!dados.telefone) return res.status(400).json({ error: "telefone é obrigatório" });
+
+    const tel = normTel(dados.telefone);
+    if (!tel || tel.length < 10) return res.status(400).json({ error: "telefone inválido" });
+
+    // se já existe, devolve ele
+    const { data: existing } = await supabase
+      .from("clientes")
+      .select("*")
+      .eq("telefone_norm", tel)
+      .maybeSingle();
+
+    if (existing?.id) return res.json(existing);
+
+    // cria novo
+    const payload = {
+      nome: String(dados.nome).trim(),
+      telefone: String(dados.telefone).trim(),
+      // defaults de preço, se vierem do front
+      valor_saida: dados.valor_saida != null ? Number(dados.valor_saida) : null,
+      valor_km: dados.valor_km != null ? Number(dados.valor_km) : null,
+      tipo: dados.tipo || "particular"
+    };
+
+    const { data, error } = await supabase
+      .from("clientes")
+      .insert([payload])
       .select()
       .single();
 
@@ -100,42 +260,15 @@ app.get("/veiculos", async (req, res) => {
   }
 });
 
-app.post("/veiculo", async (req, res) => {
-  try {
-    const dados = req.body;
-
-    const { data, error } = await supabase
-      .from("veiculos")
-      .insert([dados])
-      .select()
-      .single();
-
-    if (error) return res.status(400).json({ error: error.message });
-    return res.json(data);
-  } catch (e) {
-    return res.status(500).json({ error: String(e) });
-  }
-});
-
 // ==============================
 // ORÇAMENTO (CRIAR)
 // ==============================
 app.post("/orcamento", async (req, res) => {
   try {
-    const dados = req.body;
+    const dados = req.body || {};
 
-    if (!dados.cliente_id) return res.status(400).json({ error: "cliente_id é obrigatório" });
     if (!dados.base_id) return res.status(400).json({ error: "base_id é obrigatório" });
     if (!dados.veiculo_id) return res.status(400).json({ error: "veiculo_id é obrigatório" });
-
-    // CLIENTE
-    const { data: cliente, error: eCli } = await supabase
-      .from("clientes")
-      .select("id,nome,valor_saida,valor_km,tipo")
-      .eq("id", dados.cliente_id)
-      .single();
-
-    if (eCli || !cliente) return res.status(400).json({ error: "cliente não encontrado" });
 
     // VEICULO
     const { data: veic, error: eV } = await supabase
@@ -146,12 +279,34 @@ app.post("/orcamento", async (req, res) => {
 
     if (eV || !veic) return res.status(400).json({ error: "veiculo não encontrado" });
 
-    // PARAMETROS CLIENTE
-    let valor_saida = cliente.valor_saida;
-    let valor_km = cliente.valor_km;
+    // CLIENTE (opcional) - pelo cliente_id ou pelo telefone
+    let cliente = null;
+    if (dados.cliente_id && isUUID(dados.cliente_id)) {
+      const { data: cli } = await supabase
+        .from("clientes")
+        .select("id,nome,valor_saida,valor_km,tipo,telefone,telefone_norm")
+        .eq("id", dados.cliente_id)
+        .maybeSingle();
+      if (cli?.id) cliente = cli;
+    } else if (dados.cliente_telefone) {
+      const tel = normTel(dados.cliente_telefone);
+      if (tel.length >= 10) {
+        const { data: cli } = await supabase
+          .from("clientes")
+          .select("id,nome,valor_saida,valor_km,tipo,telefone,telefone_norm")
+          .eq("telefone_norm", tel)
+          .maybeSingle();
+        if (cli?.id) cliente = cli;
+      }
+    }
 
-    if (dados.valor_saida != null) valor_saida = Number(dados.valor_saida);
-    if (dados.valor_km != null) valor_km = Number(dados.valor_km);
+    // PARAMETROS
+    // se cliente existe e não vier override, usa tabela
+    let valor_saida = cliente?.valor_saida ?? 0;
+    let valor_km = cliente?.valor_km ?? 0;
+
+    if (dados.valor_saida != null && dados.valor_saida !== "") valor_saida = Number(dados.valor_saida);
+    if (dados.valor_km != null && dados.valor_km !== "") valor_km = Number(dados.valor_km);
 
     const km_total = Number(dados.km_total ?? dados.km ?? 0);
 
@@ -167,7 +322,9 @@ app.post("/orcamento", async (req, res) => {
     const manutencao_valor = valor_bruto * (manutencao_percent / 100);
     const combustivel_valor = km_por_litro > 0 ? (km_total / km_por_litro) * diesel_preco_litro : 0;
 
-    const cooperativa_percent = (cliente.tipo === "cooperativa") ? 20 : 0;
+    const cooperativa_percent =
+      (cliente?.tipo === "cooperativa") ? 20 : 0;
+
     const cooperativa_valor = valor_bruto * (cooperativa_percent / 100);
 
     const valor_liquido =
@@ -179,13 +336,24 @@ app.post("/orcamento", async (req, res) => {
 
     const margem_liquida_km = km_total > 0 ? (valor_liquido / km_total) : 0;
 
+    // SNAPSHOT (histórico visível)
+    const snapNome = String(dados.cliente_nome || cliente?.nome || "").trim();
+    const snapTel = String(dados.cliente_telefone || cliente?.telefone || "").trim();
+    const tipo_contato = String(dados.tipo_contato || "").trim();
+
     const novo = {
-      cliente_id: cliente.id,
+      cliente_id: cliente?.id ?? null,
       base_id: dados.base_id,
       veiculo_id: veic.id,
 
-      cliente: cliente.nome,
+      // legado que você já tinha
+      cliente: cliente?.nome ?? snapNome,
       veiculo: veic.nome,
+
+      // NOVOS snapshots
+      tipo_contato,
+      cliente_nome: snapNome,
+      cliente_telefone: snapTel,
 
       categoria: dados.categoria,
       placa: dados.placa,
@@ -228,7 +396,7 @@ app.post("/orcamento", async (req, res) => {
 });
 
 // ==============================
-// ORÇAMENTOS (HISTÓRICO) - 1x só
+// ORÇAMENTOS (HISTÓRICO)
 // ==============================
 app.get("/orcamentos", async (req, res) => {
   try {

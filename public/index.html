@@ -17,6 +17,8 @@
       --danger:#ef4444;
       --shadow: 0 20px 50px rgba(0,0,0,.35);
       --radius: 16px;
+      --paramBg: rgba(255,255,255,.03);
+      --paramText: rgba(232,236,255,.78);
     }
     *{ box-sizing:border-box; }
     body{
@@ -81,14 +83,21 @@
       color:var(--text);
       outline:none;
     }
-    input#origem, input#destino{
-    font-weight: 650;
-    }
+    input#origem, input#destino{ font-weight: 650; }
     input::placeholder{ color: rgba(232,236,255,.4); }
     input:focus, select:focus{
       border-color: rgba(59,130,246,.55);
       box-shadow: 0 0 0 4px rgba(59,130,246,.18);
     }
+
+    /* Parametrizados/readonly com tonalidade diferente */
+    input[readonly], select[readonly], .param{
+      background: var(--paramBg) !important;
+      color: var(--paramText) !important;
+      border-color: rgba(255,255,255,.12) !important;
+    }
+    .muted-note{ font-size:11px; color: rgba(232,236,255,.55); margin-top:6px; }
+
     .span-2{ grid-column: span 2; }
     @media (max-width: 640px){ .span-2{ grid-column: span 1; } }
 
@@ -126,10 +135,16 @@
       color: var(--muted);
       font-size:12px;
     }
-    .danger{
+    .status.danger{
       color: #fecaca;
       border-color: rgba(239,68,68,.35);
       background: rgba(239,68,68,.08);
+    }
+    .status.ok{
+      border-style: solid;
+      border-color: rgba(59,130,246,.28);
+      background: rgba(59,130,246,.08);
+      color: rgba(232,236,255,.85);
     }
 
     #map{
@@ -145,16 +160,147 @@
     .toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-bottom:12px; }
     .toolbar .left{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
     .tablewrap{ overflow:auto; border:1px solid var(--line); border-radius: 14px; background: rgba(8,12,28,.45); }
-    table{ width:100%; border-collapse:collapse; min-width: 980px; }
+    table{ width:100%; border-collapse:collapse; min-width: 1120px; }
     th, td{ padding:12px 12px; border-bottom:1px solid var(--line); font-size:12px; text-align:left; white-space:nowrap; }
     th{ color:rgba(232,236,255,.85); font-weight:800; background: rgba(255,255,255,.03); position: sticky; top: 0; z-index: 1; }
     td{ color: rgba(232,236,255,.9); }
     tr:hover td{ background: rgba(255,255,255,.03); }
+
+    /* Identificação */
+    #boxIdentificacao .idbox{
+      display:grid;
+      grid-template-columns: 1.3fr 1fr .7fr;
+      gap:12px;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255,255,255,.03);
+    }
+    #boxIdentificacao .idlabel{
+      font-size:11px;
+      color: var(--muted);
+      margin-bottom:6px;
+    }
+    @media (max-width: 640px){
+      #boxIdentificacao .idbox{ grid-template-columns: 1fr; }
+    }
+
+    /* MODAL */
+    .modal-backdrop{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      z-index: 9999;
+    }
+    .modal{
+      width:min(520px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      box-shadow: 0 30px 90px rgba(0,0,0,.55);
+      overflow:hidden;
+    }
+    .modal .mhead{
+      padding:14px 16px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .modal .mhead strong{ font-size:13px; }
+    .modal .mbody{ padding:16px; color: rgba(232,236,255,.88); font-size:13px; line-height:1.35; }
+    .modal .mfoot{
+      padding:14px 16px;
+      border-top:1px solid rgba(255,255,255,.10);
+      display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;
+    }
+
+    /* LOGIN overlay */
+    #loginOverlay{
+      position: fixed; inset:0;
+      background: radial-gradient(1200px 800px at 10% 0%, #19214a 0%, var(--bg) 45%) fixed;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index: 10000;
+    }
+    .loginCard{
+      width:min(520px,100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      box-shadow: 0 30px 90px rgba(0,0,0,.55);
+      overflow:hidden;
+    }
+    .loginTop{
+      padding:18px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      display:flex; align-items:center; gap:12px;
+    }
+    .loginTop .logo{
+      width:64px; height:64px;
+    }
+    .loginBody{ padding:18px; }
+    .loginBody .form{ grid-template-columns:1fr; }
+    .loginActions{ display:flex; gap:10px; justify-content:space-between; align-items:center; margin-top:14px; flex-wrap:wrap; }
+    .loginMuted{ color: rgba(232,236,255,.55); font-size:12px; }
   </style>
 </head>
 
 <body>
-  <div class="container">
+
+  <!-- LOGIN -->
+  <div id="loginOverlay">
+    <div class="loginCard">
+      <div class="loginTop">
+        <div class="logo">
+          <img src="/logo_sam_transp.png?v=3" alt="SAM Guinchos">
+        </div>
+        <div>
+          <div style="font-weight:900; letter-spacing:.2px;">SAM Guinchos</div>
+          <div class="loginMuted">Acesso restrito • operadores</div>
+        </div>
+      </div>
+      <div class="loginBody">
+        <div class="form">
+          <div>
+            <label>Usuário</label>
+            <input id="login_usuario" autocomplete="username" placeholder="admin" />
+          </div>
+          <div>
+            <label>Senha</label>
+            <input id="login_senha" type="password" autocomplete="current-password" placeholder="••••••••" />
+          </div>
+        </div>
+        <div class="loginActions">
+          <div class="status" id="loginStatus">Informe usuário e senha.</div>
+          <button class="btn" id="btnLogin" type="button">Entrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NOVO CLIENTE -->
+  <div class="modal-backdrop" id="modalNovoCliente">
+    <div class="modal">
+      <div class="mhead">
+        <strong>Novo cliente</strong>
+        <span class="pill" id="modalTel">telefone</span>
+      </div>
+      <div class="mbody">
+        Não encontrei este telefone no cadastro.<br><br>
+        Tem certeza que deseja <b>cadastrar um novo cliente</b> com este telefone?
+      </div>
+      <div class="mfoot">
+        <button class="btn secondary" id="btnNovoNao" type="button">Não</button>
+        <button class="btn" id="btnNovoSim" type="button">Sim, cadastrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="appRoot">
     <div class="topbar">
       <div class="brand">
         <div class="logo" id="logoBox">
@@ -165,7 +311,10 @@
           <p>Orçamentos • Bases • Veículos • Pedágio • Líquido</p>
         </div>
       </div>
-      <div class="pill" id="envInfo">Ambiente: Codespaces</div>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <div class="pill" id="envInfo">Ambiente: Codespaces</div>
+        <button class="btn secondary" id="btnLogout" type="button">Sair</button>
+      </div>
     </div>
 
     <div class="grid">
@@ -174,9 +323,9 @@
         <div class="head">
           <div>
             <h2>Novo orçamento</h2>
-            <small>Base + Cliente + Veículo • KM automático • custos e líquido.</small>
+            <small>Base + Tipo de contato + Veículo • KM automático • custos e líquido.</small>
           </div>
-          <span class="pill">v0.5 • Google no front</span>
+          <span class="pill">v0.6 • login + cliente por telefone</span>
         </div>
 
         <div class="body">
@@ -187,15 +336,44 @@
             </div>
 
             <div>
-              <label>Cliente</label>
-              <select id="cliente"></select>
+              <label>Tipo de contato</label>
+              <select id="tipo_contato">
+                <option value="">Selecione...</option>
+                <option value="particular">Particular</option>
+                <option value="cooperativa">Cooperativa</option>
+                <option value="seguradora">Seguradora</option>
+                <option value="oficina">Oficina</option>
+                <option value="outros">Outros</option>
+              </select>
             </div>
 
             <div class="span-2">
               <label>Veículo (cadastro)</label>
               <select id="veiculo_id"></select>
             </div>
-             <div class="span-2">
+
+            <div class="span-2" id="boxIdentificacao">
+              <label>Identificação (Cliente • Telefone • Placa)</label>
+              <div class="idbox">
+                <div>
+                  <div class="idlabel">Nome do cliente</div>
+                  <input id="cliente_nome" placeholder="Nome do cliente" />
+                </div>
+
+                <div>
+                  <div class="idlabel">Telefone (chave)</div>
+                  <input id="cliente_telefone" placeholder="(11) 99999-9999" inputmode="tel" />
+                  <div class="muted-note" id="telHint">Digite o telefone para buscar automaticamente.</div>
+                </div>
+
+                <div>
+                  <div class="idlabel">Placa</div>
+                  <input id="placa" placeholder="ABC1D23" />
+                </div>
+              </div>
+            </div>
+
+            <div class="span-2">
               <label>Origem (Coleta)</label>
               <input id="origem" placeholder="Digite e escolha uma sugestão..." autocomplete="off" />
             </div>
@@ -231,18 +409,18 @@
             </div>
 
             <div>
-              <label>Valor Saída</label>
+              <label>Valor Saída (parametrizado)</label>
               <input id="saida" inputmode="decimal" placeholder="200" />
             </div>
 
             <div>
-              <label>Valor KM</label>
+              <label>Valor KM (parametrizado)</label>
               <input id="km_valor" inputmode="decimal" placeholder="2.85" />
             </div>
 
             <div>
               <label>KM (auto)</label>
-              <input id="km" inputmode="decimal" placeholder="0.0" />
+              <input id="km" inputmode="decimal" placeholder="0.0" class="param" />
             </div>
 
             <div>
@@ -255,12 +433,6 @@
                 <option>super</option>
               </select>
             </div>
-
-            <div>
-              <label>Placa</label>
-              <input id="placa" placeholder="ABC1D23" />
-            </div>
-           
           </div>
 
           <div class="row-actions">
@@ -313,7 +485,7 @@
       <div class="head">
         <div>
           <h2>Histórico de orçamentos</h2>
-          <small>Mostra bruto, pedágio, combustível, líquido e margem/km</small>
+          <small>Mostra identificação, bruto, pedágio, combustível, líquido e margem/km</small>
         </div>
         <span class="pill" id="histCount">0 itens</span>
       </div>
@@ -343,7 +515,10 @@
               <tr>
                 <th>Data</th>
                 <th>Base</th>
+                <th>Tipo</th>
                 <th>Cliente</th>
+                <th>Telefone</th>
+                <th>Placa</th>
                 <th>Veículo</th>
                 <th>KM</th>
                 <th>Bruto</th>
@@ -358,7 +533,7 @@
               </tr>
             </thead>
             <tbody id="histBody">
-              <tr><td colspan="14" style="color:rgba(232,236,255,.6);">Carregando...</td></tr>
+              <tr><td colspan="17" style="color:rgba(232,236,255,.6);">Carregando...</td></tr>
             </tbody>
           </table>
         </div>
@@ -367,7 +542,6 @@
   </div>
 
   <script>
-    let clientes = [];
     let bases = [];
     let veiculos = [];
     let historico = [];
@@ -378,13 +552,186 @@
     // contador global de requisições de rota (para ignorar respostas antigas)
     window.rotaReqId = Number.isFinite(window.rotaReqId) ? window.rotaReqId : 0;
 
+    // ====== LOGIN ======
+    async function checkAuth() {
+      const r = await fetch("/me", { cache:"no-store" });
+      const j = await r.json().catch(()=> ({}));
+      return !!j?.logged;
+    }
+
+    function showLogin(msg) {
+      el("loginOverlay").style.display = "flex";
+      setLoginStatus(msg || "Informe usuário e senha.", "ok");
+    }
+
+    function hideLogin() {
+      el("loginOverlay").style.display = "none";
+    }
+
+    function setLoginStatus(msg, type="ok"){
+      const box = el("loginStatus");
+      box.textContent = msg;
+      box.classList.remove("danger","ok");
+      box.classList.add(type === "danger" ? "danger" : "ok");
+    }
+
+    async function doLogin(){
+      const usuario = (el("login_usuario").value || "").trim();
+      const senha = (el("login_senha").value || "").trim();
+      if(!usuario || !senha) return setLoginStatus("Informe usuário e senha.", "danger");
+
+      setLoginStatus("Validando...", "ok");
+
+      const r = await fetch("/auth/login", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ usuario, senha })
+      });
+      const j = await r.json().catch(()=> ({}));
+
+      if(!r.ok){
+        setLoginStatus(j.error || "Falha no login.", "danger");
+        return;
+      }
+
+      hideLogin();
+      await initApp();
+    }
+
+    async function doLogout(){
+      await fetch("/auth/logout", { method:"POST" }).catch(()=>{});
+      showLogin("Você saiu. Faça login novamente.");
+    }
+
+    // ====== MODAL NOVO CLIENTE ======
+    const modal = {
+      open(tel){
+        el("modalTel").textContent = tel;
+        el("modalNovoCliente").style.display = "flex";
+      },
+      close(){
+        el("modalNovoCliente").style.display = "none";
+      }
+    };
+
+    // ====== TELEFONE: LOOKUP + CONFIRMAÇÃO ======
+    let phoneTimer = null;
+    let lastTelNorm = "";
+    let pendingNewClient = null; // { tel, nome, tipo_contato }
+
+    function normalizePhone(v){ return String(v || "").replace(/\D/g, ""); }
+
+    function markParam(elm, isParam){
+      if(!elm) return;
+      if(isParam) elm.classList.add("param");
+      else elm.classList.remove("param");
+    }
+
+    async function lookupTelefoneDebounced(){
+      if(phoneTimer) clearTimeout(phoneTimer);
+      phoneTimer = setTimeout(async () => {
+        await lookupTelefone();
+      }, 450);
+    }
+
+    async function lookupTelefone(){
+      const tel = (el("cliente_telefone").value || "").trim();
+      const telNorm = normalizePhone(tel);
+
+      el("telHint").textContent = "Digite o telefone para buscar automaticamente.";
+
+      if(telNorm.length < 8) return;
+
+      if(telNorm === lastTelNorm) return;
+      lastTelNorm = telNorm;
+
+      el("telHint").textContent = "Buscando cliente...";
+
+      const r = await fetch(`/clientes/lookup?telefone=${encodeURIComponent(tel)}`, { cache:"no-store" });
+      const j = await r.json().catch(()=> ({}));
+
+      if(!r.ok){
+        el("telHint").textContent = j.error ? `Erro: ${j.error}` : "Erro ao buscar cliente.";
+        return;
+      }
+
+      if(j.found && j.cliente){
+        const c = j.cliente;
+
+        el("cliente_nome").value = c.nome || "";
+        el("cliente_telefone").value = c.telefone || tel;
+        el("telHint").textContent = "Cliente carregado automaticamente ✅";
+
+        if (c.valor_saida != null) { el("saida").value = c.valor_saida; markParam(el("saida"), true); }
+        if (c.valor_km != null) { el("km_valor").value = c.valor_km; markParam(el("km_valor"), true); }
+
+        const tipoSel = el("tipo_contato");
+        if(!tipoSel.value && c.tipo) tipoSel.value = String(c.tipo).toLowerCase();
+
+        recomputarTudo();
+        return;
+      }
+
+      el("telHint").textContent = "Telefone não cadastrado.";
+      pendingNewClient = {
+        tel,
+        nome: (el("cliente_nome").value || "").trim(),
+        tipo_contato: (el("tipo_contato").value || "").trim()
+      };
+      modal.open(tel);
+    }
+
+    async function createClientFromPending(){
+      if(!pendingNewClient) return;
+      const tipo = pendingNewClient.tipo_contato || "particular";
+      const nome = (el("cliente_nome").value || "").trim();
+      const telefone = (el("cliente_telefone").value || "").trim();
+
+      if(!nome){
+        modal.close();
+        setStatus("Informe o nome do cliente antes de cadastrar.", "danger");
+        el("cliente_nome").focus();
+        return;
+      }
+      if(normalizePhone(telefone).length < 8){
+        modal.close();
+        setStatus("Telefone inválido para cadastrar.", "danger");
+        el("cliente_telefone").focus();
+        return;
+      }
+
+      modal.close();
+      setStatus("Cadastrando cliente...", "ok");
+
+      const r = await fetch("/cliente", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          nome,
+          telefone,
+          tipo,
+          valor_saida: num(el("saida").value || 200),
+          valor_km: num(el("km_valor").value || 2.85)
+        })
+      });
+
+      const j = await r.json().catch(()=> ({}));
+      if(!r.ok){
+        setStatus(j.error || "Erro ao cadastrar cliente.", "danger");
+        return;
+      }
+
+      setStatus("Cliente cadastrado ✅", "ok");
+      el("telHint").textContent = "Cliente cadastrado e carregado ✅";
+      pendingNewClient = null;
+    }
+
     // ====== GOOGLE MAPS ======
     let gmap, gDirectionsService, gDirectionsRenderer;
     let gAutoOrigem, gAutoDestino;
     let rotaTimer = null;
 
     function initGoogle(){
-      // Se key/dominio não autorizou, não derruba o app
       if (!window.google?.maps) {
         setStatus("Google Maps não carregou (verifique API key/domínio).", "danger");
         return;
@@ -404,7 +751,6 @@
         suppressMarkers: false
       });
 
-      // Autocomplete (legado - ok por enquanto; aviso de depreciação pode ignorar)
       const inputOrigem = el("origem");
       const inputDestino = el("destino");
 
@@ -420,7 +766,6 @@
       gAutoOrigem.addListener("place_changed", scheduleRota);
       gAutoDestino.addListener("place_changed", scheduleRota);
 
-      // Debounce pra digitação manual
       inputOrigem.addEventListener("input", scheduleRota);
       inputDestino.addEventListener("input", scheduleRota);
       inputOrigem.addEventListener("blur", scheduleRota);
@@ -468,11 +813,11 @@
           return;
         }
         if (!gDirectionsService || !gDirectionsRenderer) {
-          setStatus("Maps ainda inicializando...", "warning");
+          setStatus("Maps ainda inicializando...", "danger");
           return;
         }
 
-        setStatus("Calculando rota e KM...");
+        setStatus("Calculando rota e KM...", "ok");
 
         const request = {
           origin: b.endereco,
@@ -486,7 +831,6 @@
         };
 
         gDirectionsService.route(request, async (result, status) => {
-          // ignora resposta antiga
           if (myReq !== window.rotaReqId) return;
 
           const origemNow = (el("origem").value || "").trim();
@@ -499,9 +843,8 @@
             return;
           }
 
-          try { gDirectionsRenderer.setDirections(result); } catch (e) { console.warn("Falha ao renderizar rota:", e); }
+          try { gDirectionsRenderer.setDirections(result); } catch (e) {}
 
-          // KM pelo Maps (fallback caso /rota falhe)
           const legs = result.routes[0]?.legs || [];
           const meters = legs.reduce((sum, leg) => sum + (Number(leg?.distance?.value) || 0), 0);
           const kmTotalMaps = meters / 1000;
@@ -509,42 +852,9 @@
             el("km").value = kmTotalMaps.toFixed(1);
           }
 
-          // Pedágio: sempre editável e não zera se /rota falhar
-          const pedagioEl = el("pedagio_total");
-          const pedagioAtual = Number(String(pedagioEl?.value || "0").replace(",", ".")) || 0;
-          let pedagioFinal = pedagioAtual;
-
-          try {
-            if (v?.eixos) {
-              const r = await fetch("/rota", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ base_id: b.id, origem, destino, eixos: v.eixos })
-              });
-
-              const j = await r.json().catch(() => ({}));
-
-              if (myReq !== window.rotaReqId) return;
-
-              if (r.ok) {
-                const p = Number(j.pedagio_total);
-                if (Number.isFinite(p)) pedagioFinal = p;
-
-                const kmApi = Number(j.km_total);
-                if (Number.isFinite(kmApi)) el("km").value = kmApi.toFixed(1);
-              } else {
-                console.warn("Pedágio via /rota falhou:", j);
-              }
-            }
-          } catch (e) {
-            console.warn("Pedágio via /rota falhou:", e);
-          }
-
-          if (pedagioEl) pedagioEl.value = Number(pedagioFinal).toFixed(2);
-
           recomputarTudo();
           const kmFinal = Number(el("km").value) || 0;
-          setStatus(`KM: ${kmFinal.toFixed(1)} • Pedágio: ${moneyBR(pedagioFinal)} ✅`);
+          setStatus(`KM: ${kmFinal.toFixed(1)} ✅`, "ok");
         });
 
       } catch (e) {
@@ -553,59 +863,12 @@
       }
     }
 
-    // ====== INIT (listeners) ======
-    el("cliente").addEventListener("change", () => { mostrarParametrosCliente(); recomputarTudo(); scheduleRota(); });
-    el("btnCalcular").addEventListener("click", () => { recomputarTudo(); scheduleRota(); });
-    el("btnSalvar").addEventListener("click", salvar);
-    el("btnLimpar").addEventListener("click", limparFormulario);
-
-    el("btnRecarregar").addEventListener("click", async () => {
-      await carregarBases();
-      await carregarClientes();
-      await carregarVeiculos();
-      setStatus("Listas recarregadas.");
-      scheduleRota();
-    });
-
-    el("btnAtualizarHist").addEventListener("click", carregarHistorico);
-    el("btnLimparFiltros").addEventListener("click", () => {
-      el("filtroTexto").value = "";
-      el("filtroCategoria").value = "";
-      renderHistorico();
-    });
-    el("filtroTexto").addEventListener("input", renderHistorico);
-    el("filtroCategoria").addEventListener("change", renderHistorico);
-
-    // recalcular quando usuário mexer nos custos manualmente
-    ["pedagio_total","manutencao_percent","diesel_preco_litro","saida","km_valor","km"].forEach(id => {
-      const x = el(id);
-      if (x) x.addEventListener("input", () => recomputarTudo());
-    });
-
-    (async function init(){
-      await carregarBases();
-      await carregarClientes();
-      await carregarVeiculos();
-      await carregarHistorico();
-      iniciarAutoRefreshHistorico();
-      mostrarParametrosCliente();
-      recomputarTudo();
-
-      if(window.google?.maps) initGoogle();
-    })();
-
-    function iniciarAutoRefreshHistorico(){
-      if(histTimer) clearInterval(histTimer);
-      histTimer = setInterval(() => carregarHistorico(), 10000);
-      document.addEventListener("visibilitychange", () => { if (!document.hidden) carregarHistorico(); });
-      window.addEventListener("focus", () => carregarHistorico());
-    }
-
     // ====== HELPERS ======
     function setStatus(msg, type="ok"){
-      el("statusBox").textContent = msg;
-      el("statusBox").classList.remove("danger");
-      if(type === "danger") el("statusBox").classList.add("danger");
+      const box = el("statusBox");
+      box.textContent = msg;
+      box.classList.remove("danger","ok");
+      box.classList.add(type === "danger" ? "danger" : "ok");
     }
     function moneyBR(v){
       const n = Number(v || 0);
@@ -622,12 +885,10 @@
     // ====== LOADERS ======
     async function carregarBases(){
       const r = await fetch("/bases", { cache: "no-store" });
-      const d = await r.json();
+      const d = await r.json().catch(()=> []);
       bases = Array.isArray(d) ? d : [];
 
       const select = el("base_id");
-      if(!select) return;
-
       const current = select.value;
 
       select.innerHTML =
@@ -641,42 +902,23 @@
       if (current) select.value = current;
     }
 
-    async function carregarClientes(){
-      const r = await fetch("/clientes", { cache: "no-store" });
-      const d = await r.json();
-      clientes = Array.isArray(d) ? d : [];
-      const select = el("cliente");
-      select.innerHTML = "";
-      clientes.forEach(c => {
-        const op = document.createElement("option");
-        op.value = c.id;
-        op.textContent = c.nome;
-        select.appendChild(op);
-      });
-    }
-
     async function carregarVeiculos(){
       const r = await fetch("/veiculos", { cache: "no-store" });
-      const d = await r.json();
+      const d = await r.json().catch(()=> []);
       veiculos = Array.isArray(d) ? d : [];
       const select = el("veiculo_id");
       const current = select.value;
-      select.innerHTML = "";
-      veiculos.forEach(v => {
-        const op = document.createElement("option");
-        op.value = v.id;
-        op.textContent = `${v.nome} • ${v.km_por_litro} km/L • ${v.eixos} eixos • ${v.classe}`;
-        select.appendChild(op);
-      });
+
+      select.innerHTML = `<option value="">Selecione...</option>` + veiculos.map(v =>
+        `<option value="${v.id}">${v.nome} • ${v.km_por_litro} km/L • ${v.eixos} eixos • ${v.classe}</option>`
+      ).join("");
+
       if (current) select.value = current;
     }
 
-    function mostrarParametrosCliente(){
-      const id = el("cliente").value;
-      const c = clientes.find(x => String(x.id) === String(id));
-      if(!c) return;
-      el("saida").value = c.valor_saida ?? "";
-      el("km_valor").value = c.valor_km ?? "";
+    function getVeiculoSelecionado(){
+      const id = el("veiculo_id").value;
+      return veiculos.find(v => String(v.id) === String(id));
     }
 
     // ====== CÁLCULOS ======
@@ -685,11 +927,6 @@
       const valor_km = num(el("km_valor").value);
       const km = num(el("km").value);
       return saida + (km * valor_km);
-    }
-
-    function getVeiculoSelecionado(){
-      const id = el("veiculo_id").value;
-      return veiculos.find(v => String(v.id) === String(id));
     }
 
     function recomputarTudo(){
@@ -710,8 +947,8 @@
 
       el("combustivel_valor").value = moneyBR(combust);
 
-      const c = clientes.find(x => String(x.id) === String(el("cliente").value));
-      const coopPct = (c?.tipo === "cooperativa") ? 20 : 0;
+      const tipo = (el("tipo_contato").value || "").toLowerCase();
+      const coopPct = (tipo === "cooperativa") ? 20 : 0;
       const coop = bruto * (coopPct/100);
 
       const liquido = bruto - pedagio - manut - combust - coop;
@@ -727,13 +964,20 @@
     // ====== SAVE ======
     async function salvar(){
       try{
-        const clienteId = el("cliente").value;
         const baseId = el("base_id").value;
         const veiculoId = el("veiculo_id").value;
+        const tipoContato = el("tipo_contato").value;
 
-        if(!clienteId) return setStatus("Selecione um cliente.", "danger");
         if(!baseId) return setStatus("Selecione uma base.", "danger");
+        if(!tipoContato) return setStatus("Selecione o tipo de contato.", "danger");
         if(!veiculoId) return setStatus("Selecione um veículo.", "danger");
+
+        const clienteNome = (el("cliente_nome").value || "").trim();
+        const clienteTelefone = (el("cliente_telefone").value || "").trim();
+        const placa = (el("placa").value || "").trim();
+
+        if(!clienteNome) return setStatus("Informe o nome do cliente.", "danger");
+        if(normalizePhone(clienteTelefone).length < 8) return setStatus("Informe um telefone válido.", "danger");
 
         const origem = (el("origem").value || "").trim();
         const destino = (el("destino").value || "").trim();
@@ -742,17 +986,19 @@
         const custos = recomputarTudo();
 
         const payload = {
-          cliente_id: clienteId,
           base_id: baseId,
           veiculo_id: veiculoId,
+          tipo_contato: tipoContato,
+
+          cliente_nome: clienteNome,
+          cliente_telefone: clienteTelefone,
 
           valor_saida: num(el("saida").value),
           valor_km: num(el("km_valor").value),
-
           km_total: num(el("km").value),
 
           categoria: el("categoria").value,
-          placa: el("placa").value,
+          placa,
 
           origem,
           destino,
@@ -760,7 +1006,6 @@
           manutencao_percent: num(el("manutencao_percent").value || 6.5),
           diesel_preco_litro: num(el("diesel_preco_litro").value || 6.17),
           km_por_litro: custos.kmPorLitro,
-
           pedagio_total: num(el("pedagio_total").value),
         };
 
@@ -778,7 +1023,7 @@
           return;
         }
 
-        setStatus("Orçamento salvo ✅");
+        setStatus("Orçamento salvo ✅", "ok");
         await carregarHistorico();
       }catch(e){
         console.error(e);
@@ -787,6 +1032,8 @@
     }
 
     function limparFormulario(){
+      el("cliente_nome").value = "";
+      el("cliente_telefone").value = "";
       el("placa").value = "";
       el("origem").value = "";
       el("destino").value = "";
@@ -794,7 +1041,12 @@
       el("pedagio_total").value = "";
       el("combustivel_valor").value = "";
       el("liquido_margem").value = "";
-      setStatus("Formulário limpo.");
+      el("telHint").textContent = "Digite o telefone para buscar automaticamente.";
+      setStatus("Formulário limpo.", "ok");
+
+      markParam(el("saida"), false);
+      markParam(el("km_valor"), false);
+
       recomputarTudo();
       scheduleRota();
     }
@@ -810,7 +1062,7 @@
           historico = [];
           el("histCount").textContent = `0 itens`;
           el("histBody").innerHTML =
-            `<tr><td colspan="14" style="color:rgba(232,236,255,.6);">Histórico indisponível (${r.status}).</td></tr>`;
+            `<tr><td colspan="17" style="color:rgba(232,236,255,.6);">Histórico indisponível (${r.status}).</td></tr>`;
           return;
         }
 
@@ -821,7 +1073,7 @@
       }catch(e){
         console.error(e);
         el("histBody").innerHTML =
-          `<tr><td colspan="14" style="color:rgba(232,236,255,.6);">Erro ao carregar histórico.</td></tr>`;
+          `<tr><td colspan="17" style="color:rgba(232,236,255,.6);">Erro ao carregar histórico.</td></tr>`;
       }
     }
 
@@ -833,7 +1085,9 @@
         if(cat && String(o.categoria || "").toLowerCase() !== cat) return false;
         if(!q) return true;
         const hay = [
+          o.tipo_contato,
           o.cliente_nome, o.cliente,
+          o.cliente_telefone,
           o.base_nome, o.base,
           o.veiculo,
           o.placa, o.origem, o.destino, o.categoria, o.status
@@ -844,7 +1098,7 @@
       el("histCount").textContent = `${rows.length} itens`;
 
       if(!rows.length){
-        el("histBody").innerHTML = `<tr><td colspan="14" style="color:rgba(232,236,255,.6);">Sem registros.</td></tr>`;
+        el("histBody").innerHTML = `<tr><td colspan="17" style="color:rgba(232,236,255,.6);">Sem registros.</td></tr>`;
         return;
       }
 
@@ -852,7 +1106,10 @@
         <tr>
           <td>${fmtDate(o.created_at || o.data || o.createdAt)}</td>
           <td>${o.base_nome ?? ""}</td>
+          <td>${o.tipo_contato ?? ""}</td>
           <td>${o.cliente_nome ?? o.cliente ?? ""}</td>
+          <td>${o.cliente_telefone ?? ""}</td>
+          <td>${o.placa ?? ""}</td>
           <td>${o.veiculo ?? ""}</td>
           <td>${(o.km_total ?? o.km ?? "")}</td>
           <td>${moneyBR(o.valor_bruto ?? o.valor_total ?? o.valor ?? 0)}</td>
@@ -867,6 +1124,73 @@
         </tr>
       `).join("");
     }
+
+    // ====== APP INIT ======
+    async function initApp(){
+      await carregarBases();
+      await carregarVeiculos();
+      await carregarHistorico();
+      iniciarAutoRefreshHistorico();
+      recomputarTudo();
+
+      if(window.google?.maps) initGoogle();
+      setStatus("Pronto ✅", "ok");
+    }
+
+    function iniciarAutoRefreshHistorico(){
+      if(histTimer) clearInterval(histTimer);
+      histTimer = setInterval(() => carregarHistorico(), 10000);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) carregarHistorico(); });
+      window.addEventListener("focus", () => carregarHistorico());
+    }
+
+    // ====== LISTENERS ======
+    el("btnLogin").addEventListener("click", doLogin);
+    el("login_senha").addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
+    el("btnLogout").addEventListener("click", doLogout);
+
+    el("btnNovoNao").addEventListener("click", ()=>{ pendingNewClient = null; modal.close(); });
+    el("btnNovoSim").addEventListener("click", createClientFromPending);
+
+    el("cliente_telefone").addEventListener("input", lookupTelefoneDebounced);
+    el("cliente_telefone").addEventListener("blur", lookupTelefoneDebounced);
+
+    el("tipo_contato").addEventListener("change", ()=>{ recomputarTudo(); });
+
+    el("btnCalcular").addEventListener("click", () => { recomputarTudo(); scheduleRota(); });
+    el("btnSalvar").addEventListener("click", salvar);
+    el("btnLimpar").addEventListener("click", limparFormulario);
+
+    el("btnRecarregar").addEventListener("click", async () => {
+      await carregarBases();
+      await carregarVeiculos();
+      setStatus("Listas recarregadas.", "ok");
+      scheduleRota();
+    });
+
+    el("btnAtualizarHist").addEventListener("click", carregarHistorico);
+    el("btnLimparFiltros").addEventListener("click", () => {
+      el("filtroTexto").value = "";
+      el("filtroCategoria").value = "";
+      renderHistorico();
+    });
+    el("filtroTexto").addEventListener("input", renderHistorico);
+    el("filtroCategoria").addEventListener("change", renderHistorico);
+
+    ["pedagio_total","manutencao_percent","diesel_preco_litro","saida","km_valor","km"].forEach(id => {
+      const x = el(id);
+      if (x) x.addEventListener("input", () => recomputarTudo());
+    });
+
+    // ====== BOOT ======
+    (async function boot(){
+      const ok = await checkAuth().catch(()=> false);
+      if(!ok){
+        showLogin();
+        return;
+      }
+      await initApp();
+    })();
 
     // expõe pro callback do google
     window.initGoogle = initGoogle;
