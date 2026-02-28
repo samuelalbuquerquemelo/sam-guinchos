@@ -370,7 +370,10 @@
     let historico = [];
     let histTimer = null;
     
-    window.rotaReqId = 0;
+
+    window.rotaReqId = Number.isFinite(window.rotaReqId) ? window.rotaReqId : 0;
+
+
     const el = (id) => document.getElementById(id);
 
     // ====== GOOGLE MAPS ======
@@ -435,7 +438,9 @@
     
     async function atualizarRota() {
 
-const myReq = ++window.rotaReqId;
+window.rotaReqId = Number(window.rotaReqId) || 0;
+const myReq = (window.rotaReqId += 1);
+
 if (myReq !== window.rotaReqId) return;
 
   try {
