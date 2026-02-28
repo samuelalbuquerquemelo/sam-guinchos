@@ -81,6 +81,9 @@
       color:var(--text);
       outline:none;
     }
+    input#origem, input#destino{
+    font-weight: 650;
+    }
     input::placeholder{ color: rgba(232,236,255,.4); }
     input:focus, select:focus{
       border-color: rgba(59,130,246,.55);
@@ -192,6 +195,15 @@
               <label>Veículo (cadastro)</label>
               <select id="veiculo_id"></select>
             </div>
+             <div class="span-2">
+              <label>Origem (Coleta)</label>
+              <input id="origem" placeholder="Digite e escolha uma sugestão..." autocomplete="off" />
+            </div>
+
+            <div class="span-2">
+              <label>Destino</label>
+              <input id="destino" placeholder="Digite e escolha uma sugestão..." autocomplete="off" />
+            </div>
 
             <div>
               <label>Manutenção (%)</label>
@@ -248,16 +260,7 @@
               <label>Placa</label>
               <input id="placa" placeholder="ABC1D23" />
             </div>
-
-            <div class="span-2">
-              <label>Origem (Coleta)</label>
-              <input id="origem" placeholder="Digite e escolha uma sugestão..." autocomplete="off" />
-            </div>
-
-            <div class="span-2">
-              <label>Destino</label>
-              <input id="destino" placeholder="Digite e escolha uma sugestão..." autocomplete="off" />
-            </div>
+           
           </div>
 
           <div class="row-actions">
