@@ -180,7 +180,7 @@
           <div class="form">
             <div>
               <label>Base</label>
-              <select id="base"></select>
+              <select id="base_id"></select>
             </div>
 
             <div>
@@ -205,7 +205,7 @@
 
             <div>
               <label>Pedágio total (R$) (ida+volta)</label>
-              <input id="pedagio_total" readonly />
+              <input id="pedagio_total" />
             </div>
 
             <div>
@@ -429,10 +429,20 @@
   rotaTimer = setTimeout(() => atualizarRota(), 800);
 }
  
-    function getBaseSelecionada(){
-      const baseId = el("base").value;
-      return (bases || []).find(b => String(b.id) === String(baseId)) || null;
-    }
+    function getBaseSelecionada() {
+  const select = el("base");
+  if (!select) return null;
+
+  const id = select.value;
+  const opt = select.options[select.selectedIndex];
+
+  if (!id) return null;
+
+  return {
+    id,
+    endereco: decodeURIComponent(opt?.dataset?.endereco || "")
+  };
+}
 
 
     
@@ -541,7 +551,13 @@ if (myReq !== window.rotaReqId) return;
       } catch (e) {
         console.warn("Pedágio via /rota falhou:", e);
       }
+    function isUUID(v) {
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(v || ""));
+    }
 
+    if (!isUUID(base_id)) {
+      return res.status(400).json({ erro: "base_id inválido (não é UUID)", base_id });
+    }
       el("pedagio_total").value = pedagio.toFixed(2);
 
       // recalcula financeiro
@@ -625,7 +641,18 @@ if (myReq !== window.rotaReqId) return;
       const d = await r.json();
       bases = Array.isArray(d) ? d : [];
       const select = el("base");
-      const current = select.value;
+const current = select.value;
+
+select.innerHTML =
+  `<option value="">Selecione a base...</option>` +
+  bases.map(b =>
+    `<option value="${b.id}" data-endereco="${encodeURIComponent(b.endereco || "")}">
+      ${b.nome || "Base"} - ${b.endereco || ""}
+    </option>`
+  ).join("");
+
+// mantém seleção anterior se existir
+if (current) select.value = current;
       select.innerHTML = "";
       bases.forEach(b => {
         const op = document.createElement("option");
