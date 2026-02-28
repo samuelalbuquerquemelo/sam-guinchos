@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-window.rotaReqId = 0;
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -370,10 +369,10 @@ window.rotaReqId = 0;
     let veiculos = [];
     let historico = [];
     let histTimer = null;
-
+    
+    window.rotaReqId = 0;
     const el = (id) => document.getElementById(id);
 
-    let rotaReqId = 0;
     // ====== GOOGLE MAPS ======
     let gmap, gDirectionsService, gDirectionsRenderer;
     let gAutoOrigem, gAutoDestino;
