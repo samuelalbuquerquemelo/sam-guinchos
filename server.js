@@ -290,81 +290,163 @@ app.get("/orcamentos", async (req, res) => {
 // CALCULO DE ROTA GOOGLE (SEGURO)
 // ========================================
 app.post("/rota", async (req, res) => {
+  const startedAt = Date.now();
+
   try {
     const { origem, destino, base_id } = req.body || {};
 
-    if (!origem || !destino || !base_id) {
-      return res.status(400).json({ erro: "Informe base_id, origem e destino" });
+    // 1) validação simples e objetiva
+    if (typeof origem !== "string" || !origem.trim()) {
+      return res.status(400).json({ erro: "Informe 'origem' (string)" });
+    }
+    if (typeof destino !== "string" || !destino.trim()) {
+      return res.status(400).json({ erro: "Informe 'destino' (string)" });
+    }
+    if (typeof base_id !== "string" || !base_id.trim()) {
+      return res.status(400).json({ erro: "Informe 'base_id' (UUID/string)" });
     }
 
-    // buscar base (UUID)
+    // 2) buscar base no Supabase
     const { data: base, error: baseErr } = await supabase
       .from("bases")
       .select("id,nome,endereco")
       .eq("id", base_id)
       .single();
 
-    if (baseErr) return res.status(400).json({ erro: "Base não encontrada", detalhes: baseErr.message });
-    if (!base?.endereco) return res.status(400).json({ erro: "base sem endereco" });
+    if (baseErr || !base) {
+      return res.status(400).json({
+        erro: "Base não encontrada",
+        detalhes: baseErr?.message || "base null"
+      });
+    }
+    if (!base.endereco || !String(base.endereco).trim()) {
+      return res.status(400).json({ erro: "Base sem endereco cadastrado" });
+    }
 
     const key = process.env.GOOGLE_MAPS_KEY;
-    if (!key) return res.status(500).json({ erro: "GOOGLE_MAPS_KEY não configurada no .env" });
+    if (!key) {
+      return res.status(500).json({ erro: "GOOGLE_MAPS_KEY não configurada no .env" });
+    }
 
+    // 3) helper: chama Directions API com timeout + parsing seguro
     async function directions(from, to) {
-      const url =
-        `https://maps.googleapis.com/maps/api/directions/json?` +
-        `origin=${encodeURIComponent(from)}` +
-        `&destination=${encodeURIComponent(to)}` +
-        `&mode=driving&units=metric` +
-        `&key=${encodeURIComponent(key)}`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000); // 15s
 
-      const r = await fetch(url);
-      const j = await r.json();
+      try {
+        const url =
+          `https://maps.googleapis.com/maps/api/directions/json?` +
+          `origin=${encodeURIComponent(from)}` +
+          `&destination=${encodeURIComponent(to)}` +
+          `&mode=driving&units=metric` +
+          `&key=${encodeURIComponent(key)}`;
 
-      // validações
-      if (j.status !== "OK" || !j.routes?.length || !j.routes[0]?.legs?.length) {
+        const r = await fetch(url, { signal: controller.signal });
+        const j = await r.json().catch(() => ({}));
+
+        if (j.status !== "OK" || !j.routes?.length || !j.routes[0]?.legs?.length) {
+          return {
+            ok: false,
+            status: j.status || "NO_STATUS",
+            error_message: j.error_message || null,
+            from,
+            to
+          };
+        }
+
+        const leg = j.routes[0].legs[0];
+
+        const distance_m = Number(leg.distance?.value || 0);
+        const duration_s = Number(leg.duration?.value || 0);
+
+        return {
+          ok: true,
+          km: distance_m / 1000,
+          duration_min: duration_s / 60,
+          start_address: leg.start_address || from,
+          end_address: leg.end_address || to
+        };
+      } catch (err) {
+        const aborted = String(err?.name || "").toLowerCase().includes("abort");
         return {
           ok: false,
-          status: j.status,
-          error_message: j.error_message || null,
+          status: aborted ? "TIMEOUT" : "FETCH_ERROR",
+          error_message: aborted ? "Request timeout" : String(err),
           from,
           to
         };
+      } finally {
+        clearTimeout(timeout);
       }
-
-      const leg = j.routes[0].legs[0];
-      const km = (leg.distance?.value || 0) / 1000;
-
-      return { ok: true, km };
     }
 
-    const baseEnd = base.endereco;
+    const baseEnd = base.endereco.trim();
+    const orig = origem.trim();
+    const dest = destino.trim();
 
-    const p1 = await directions(baseEnd, origem);
-    if (!p1.ok) return res.status(400).json({ erro: "Directions falhou Base→Origem", ...p1 });
+    // 4) calcula pernas:
+    // - p1 (base -> origem)
+    // - p2 (origem -> destino)
+    // - p3 (destino -> base)
+    //
+    // Observação: p2 independe das demais, então pode ir em paralelo com p1.
+    const [p1, p2] = await Promise.all([
+      directions(baseEnd, orig),
+      directions(orig, dest)
+    ]);
 
-    const p2 = await directions(origem, destino);
-    if (!p2.ok) return res.status(400).json({ erro: "Directions falhou Origem→Destino", ...p2 });
+    if (!p1.ok) {
+      return res.status(400).json({ erro: "Directions falhou Base→Origem", ...p1 });
+    }
+    if (!p2.ok) {
+      return res.status(400).json({ erro: "Directions falhou Origem→Destino", ...p2 });
+    }
 
-    const p3 = await directions(destino, baseEnd);
-    if (!p3.ok) return res.status(400).json({ erro: "Directions falhou Destino→Base", ...p3 });
+    // p3 depende só do destino/base (pode ser após validar p1/p2)
+    const p3 = await directions(dest, baseEnd);
+    if (!p3.ok) {
+      return res.status(400).json({ erro: "Directions falhou Destino→Base", ...p3 });
+    }
 
-    const total = p1.km + p2.km + p3.km;
+    // 5) totais
+    const km_total = p1.km + p2.km + p3.km;
+    const dur_total_min = p1.duration_min + p2.duration_min + p3.duration_min;
 
+    // 6) resposta padronizada p/ frontend + histórico
     return res.json({
-      km_total: Number(total.toFixed(1)),
-      partes: {
-        base_origem: Number(p1.km.toFixed(1)),
-        origem_destino: Number(p2.km.toFixed(1)),
-        destino_base: Number(p3.km.toFixed(1))
-      },
-      base: { id: base.id, nome: base.nome, endereco: baseEnd }
+      km_total: Number(km_total.toFixed(1)),
+      duracao_total_min: Number(dur_total_min.toFixed(0)),
+      pernas: [
+        {
+          trecho: "BASE_ORIGEM",
+          from: p1.start_address,
+          to: p1.end_address,
+          km: Number(p1.km.toFixed(1)),
+          duracao_min: Number(p1.duration_min.toFixed(0))
+        },
+        {
+          trecho: "ORIGEM_DESTINO",
+          from: p2.start_address,
+          to: p2.end_address,
+          km: Number(p2.km.toFixed(1)),
+          duracao_min: Number(p2.duration_min.toFixed(0))
+        },
+        {
+          trecho: "DESTINO_BASE",
+          from: p3.start_address,
+          to: p3.end_address,
+          km: Number(p3.km.toFixed(1)),
+          duracao_min: Number(p3.duration_min.toFixed(0))
+        }
+      ],
+      base: { id: base.id, nome: base.nome, endereco: baseEnd },
+      input: { origem: orig, destino: dest, base_id },
+      meta: { ms: Date.now() - startedAt }
     });
   } catch (e) {
-    return res.status(500).json({ erro: String(e) });
+    return res.status(500).json({ erro: "Erro interno", detalhes: String(e) });
   }
 });
-
 
 const PORT = process.env.PORT || 3000;
 

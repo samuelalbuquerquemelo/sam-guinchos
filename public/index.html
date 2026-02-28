@@ -420,95 +420,93 @@
       scheduleRota();
     }
 
-    function scheduleRota(){
-      if(rotaTimer) clearTimeout(rotaTimer);
-      rotaTimer = setTimeout(() => atualizarRota(), 550);
-    }
-
+  function scheduleRota(){
+  if(rotaTimer) clearTimeout(rotaTimer);
+  rotaTimer = setTimeout(() => atualizarRota(), 800);
+}
+ 
     function getBaseSelecionada(){
       const baseId = el("base").value;
       return (bases || []).find(b => String(b.id) === String(baseId)) || null;
     }
 
+
+    
     async function atualizarRota(){
-      try{
-        const b = getBaseSelecionada();
-        const origem = (el("origem").value || "").trim();
-        const destino = (el("destino").value || "").trim();
-        const v = getVeiculoSelecionado();
+  try{
+    const myReq = ++rotaReqId;
 
-        if(!b?.endereco || !origem || !destino) return;
+    const b = getBaseSelecionada();
+    const origem = (el("origem").value || "").trim();
+    const destino = (el("destino").value || "").trim();
+    const v = getVeiculoSelecionado();
 
-        setStatus("Calculando rota e KM...");
+    if(!b?.endereco || origem.length < 6 || destino.length < 6) return;
 
-        // 1) Desenha rota no MAPA (4 pernas)
-        const request = {
-          origin: b.endereco,
-          destination: b.endereco,
-          waypoints: [
-            { location: origem, stopover: true },
-            { location: destino, stopover: true }
-          ],
-          optimizeWaypoints: false,
-          travelMode: google.maps.TravelMode.DRIVING
-        };
+    setStatus("Calculando rota e KM...");
 
-        gDirectionsService.route(request, async (result, status) => {
-          if(status !== "OK"){
-            console.error("Directions error:", status);
-            setStatus("Não foi possível calcular rota no Maps.", "danger");
-            return;
-          }
+    const request = {
+      origin: b.endereco,
+      destination: b.endereco,
+      waypoints: [
+        { location: origem, stopover: true },
+        { location: destino, stopover: true }
+      ],
+      optimizeWaypoints: false,
+      travelMode: google.maps.TravelMode.DRIVING
+    };
 
-          gDirectionsRenderer.setDirections(result);
+    gDirectionsService.route(request, async (result, status) => {
+      // se outra requisição já começou depois, ignora esta
+      if (myReq !== rotaReqId) return;
 
-          const legs = result.routes?.[0]?.legs || [];
-          const meters = legs.reduce((sum, leg) => sum + (leg.distance?.value || 0), 0);
-          const kmTotal = meters / 1000;
-
-          el("km").value = kmTotal.toFixed(1);
-
-          // 2) Pedágio: Google Directions JS NÃO retorna custo.
-          // Se você já tem backend /rota que calcula pedagio_total, usamos ele.
-          // Se não tiver, fica 0 por enquanto.
-          let pedagio = 0;
-          try{
-            if(v?.eixos){
-              const r = await fetch("/rota", {
-                method:"POST",
-                headers:{ "Content-Type":"application/json" },
-                body: JSON.stringify({
-                  base_id: b.id,
-                  origem,
-                  destino,
-                  eixos: v.eixos
-                })
-              });
-              const j = await r.json().catch(()=> ({}));
-              if(r.ok){
-                if(Number.isFinite(Number(j.pedagio_total))) pedagio = Number(j.pedagio_total);
-                // se backend devolver km_total, pode usar como “fonte oficial”
-                if(Number.isFinite(Number(j.km_total))) el("km").value = Number(j.km_total).toFixed(1);
-              }else{
-                console.warn("Pedágio via /rota falhou:", j);
-              }
-            }
-          }catch(e){
-            console.warn("Pedágio via /rota falhou:", e);
-          }
-
-          el("pedagio_total").value = pedagio.toFixed(2);
-
-          recomputarTudo();
-          setStatus(`KM: ${Number(el("km").value).toFixed(1)} • Pedágio: ${moneyBR(pedagio)} ✅`);
-        });
-
-      }catch(e){
-        console.error(e);
-        setStatus("Erro ao atualizar rota.", "danger");
+      if(status !== "OK"){
+        console.error("Directions error:", status);
+        setStatus("Não foi possível calcular rota no Maps.", "danger");
+        return;
       }
-    }
 
+      gDirectionsRenderer.setDirections(result);
+
+      const legs = result.routes?.[0]?.legs || [];
+      const meters = legs.reduce((sum, leg) => sum + (leg.distance?.value || 0), 0);
+      const kmTotal = meters / 1000;
+
+      el("km").value = kmTotal.toFixed(1);
+
+      // pedágio via backend
+      let pedagio = 0;
+      try{
+        if(v?.eixos){
+          const r = await fetch("/rota", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ base_id: b.id, origem, destino, eixos: v.eixos })
+          });
+
+          const j = await r.json().catch(()=> ({}));
+          if(r.ok){
+            if(Number.isFinite(Number(j.pedagio_total))) pedagio = Number(j.pedagio_total);
+            if(Number.isFinite(Number(j.km_total))) el("km").value = Number(j.km_total).toFixed(1);
+          }else{
+            console.warn("Pedágio via /rota falhou:", j);
+          }
+        }
+      }catch(e){
+        console.warn("Pedágio via /rota falhou:", e);
+      }
+
+      el("pedagio_total").value = pedagio.toFixed(2);
+
+      recomputarTudo();
+      setStatus(`KM: ${Number(el("km").value).toFixed(1)} • Pedágio: ${moneyBR(pedagio)} ✅`);
+    });
+
+  }catch(e){
+    console.error(e);
+    setStatus("Erro ao atualizar rota.", "danger");
+  }
+}
     // ====== INIT ======
     el("cliente").addEventListener("change", () => { mostrarParametrosCliente(); recomputarTudo(); scheduleRota(); });
     el("btnCalcular").addEventListener("click", () => { recomputarTudo(); scheduleRota(); });
@@ -819,9 +817,10 @@
     window.initGoogle = initGoogle;
   </script>
 
+
   <!-- Google Maps + Places (KEY NO FRONT) -->
   <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKkex4PTmvzwa-xuZawwmnnaZrpP5Z6ug&libraries=places&callback=initGoogle"
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKkex4PTmvzwa-xuZawwmnnaZrpP5Z6ug&libraries=places&callback=initGoogle&loading=async"
     async
     defer
   ></script>
