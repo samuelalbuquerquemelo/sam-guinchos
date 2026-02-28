@@ -293,9 +293,22 @@ app.get("/orcamentos", async (req, res) => {
 app.post("/rota", async (req, res) => {
   const startedAt = Date.now();
 
+
+
   try {
     const { origem, destino, base_id } = req.body || {};
 
+          function isUUID(v) {
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+          .test(String(v || ""));
+      }
+
+      if (!isUUID(base_id)) {
+        return res.status(400).json({
+          erro: "base_id inválido (esperado UUID)",
+          recebido: base_id
+        });
+      }
     // 1) validação simples e objetiva
     if (typeof origem !== "string" || !origem.trim()) {
       return res.status(400).json({ erro: "Informe 'origem' (string)" });
