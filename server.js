@@ -29,6 +29,13 @@ app.use(express.static("public"));
 
 app.get("/health", (req, res) => res.status(200).send("ok"));
 
+/*
+function requireAuth(req,res,next){
+  const token = getToken(req);
+  if(!token) return res.status(401).json({ error:"Não autenticado" });
+  // aqui você pode validar token (se tiver)
+  return next();
+}*/
 // ==============================
 // HELPERS
 // ==============================
@@ -97,12 +104,12 @@ function requireAuth(req, res, next) {
   return next();
 }
 
-app.use(requireAuth);
 
 // ==============================
 // AUTH
 // ==============================
 app.post("/auth/login", async (req, res) => {
+
   try {
     const { usuario, senha } = req.body || {};
     if (!usuario || !senha) return res.status(400).json({ error: "Informe usuário e senha" });
@@ -118,6 +125,8 @@ app.post("/auth/login", async (req, res) => {
     const row = Array.isArray(data) ? data[0] : data;
     if (!row?.id) return res.status(401).json({ error: "Usuário ou senha inválidos" });
 
+
+
     const token = signToken({
       id: row.id,
       usuario: row.usuario,
@@ -130,10 +139,57 @@ app.post("/auth/login", async (req, res) => {
       token,
       operador: { id: row.id, usuario: row.usuario, nome: row.nome }
     });
+
+
   } catch (e) {
     return res.status(500).json({ error: String(e) });
   }
 });
+// ==============================
+// AUTH
+// ==============================
+
+// 1) LOGIN (PÚBLICO)
+app.post("/auth/login", async (req, res) => {
+  try {
+    const { usuario, senha } = req.body || {};
+    if (!usuario || !senha) {
+      return res.status(400).json({ error: "Informe usuário e senha" });
+    }
+
+    // chama sua RPC validar_operador (exemplo)
+    const { data, error } = await supabase.rpc("validar_operador", {
+      p_usuario: usuario,
+      p_senha: senha
+    });
+
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data?.ok) return res.status(401).json({ error: "Usuário ou senha inválidos" });
+
+    // seta cookie (exemplo simples)
+    res.setHeader("Set-Cookie", `sam_token=${encodeURIComponent(data.token)}; Path=/; HttpOnly; SameSite=Lax`);
+
+    return res.json({ ok: true, operador: data.operador });
+  } catch (e) {
+    return res.status(500).json({ error: String(e) });
+  }
+});
+
+// 2) DAQUI PRA BAIXO É PRIVADO
+app.use(requireAuth);
+
+// ==============================
+// ROTAS PRIVADAS
+// ==============================
+/*
+app.get("/clientes", ...);
+app.get("/bases", ...);
+app.get("/veiculos", ...);
+app.get("/orcamentos", ...);
+app.post("/orcamento", ...);
+app.post("/rota", ...);
+*/
+
 
 app.get("/auth/me", async (req, res) => {
   const auth = req.headers.authorization || "";

@@ -554,7 +554,7 @@
 
     // ====== LOGIN ======
     async function checkAuth() {
-      const r = await fetch("/me", { cache:"no-store" });
+      const r = await fetch("/me", { cache:"no-store", credentials:"include" });
       const j = await r.json().catch(()=> ({}));
       return !!j?.logged;
     }
@@ -582,9 +582,11 @@
 
       setLoginStatus("Validando...", "ok");
 
-      const r = await fetch("/auth/login", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
+            const r = await fetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        credentials: "include",
         body: JSON.stringify({ usuario, senha })
       });
       const j = await r.json().catch(()=> ({}));
@@ -599,7 +601,7 @@
     }
 
     async function doLogout(){
-      await fetch("/auth/logout", { method:"POST" }).catch(()=>{});
+      await fetch("/auth/logout", { method:"POST",cache: "no-store", }, ).catch(()=>{});
       showLogin("Você saiu. Faça login novamente.");
     }
 
@@ -647,7 +649,8 @@
 
       el("telHint").textContent = "Buscando cliente...";
 
-      const r = await fetch(`/clientes/lookup?telefone=${encodeURIComponent(tel)}`, { cache:"no-store" });
+      const r = await fetch(`/clientes/lookup?telefone=${encodeURIComponent(tel)}`, { cache:"no-store",
+    credentials: "include" });
       const j = await r.json().catch(()=> ({}));
 
       if(!r.ok){
@@ -706,6 +709,7 @@
       const r = await fetch("/cliente", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
+        credentials: "include",
         body: JSON.stringify({
           nome,
           telefone,
@@ -884,7 +888,7 @@
 
     // ====== LOADERS ======
     async function carregarBases(){
-      const r = await fetch("/bases", { cache: "no-store" });
+      const r = await fetch("/bases", { cache: "no-store" ,credentials: "include"});
       const d = await r.json().catch(()=> []);
       bases = Array.isArray(d) ? d : [];
 
@@ -903,7 +907,7 @@
     }
 
     async function carregarVeiculos(){
-      const r = await fetch("/veiculos", { cache: "no-store" });
+      const r = await fetch("/veiculos", { cache: "no-store",credentials: "include" });
       const d = await r.json().catch(()=> []);
       veiculos = Array.isArray(d) ? d : [];
       const select = el("veiculo_id");
@@ -1011,6 +1015,7 @@
 
         const r = await fetch("/orcamento", {
           method:"POST",
+          credentials: "include",
           headers:{ "Content-Type":"application/json" },
           body: JSON.stringify(payload)
         });
