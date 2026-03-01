@@ -749,6 +749,8 @@
     let gmap, gDirectionsService, gDirectionsRenderer;
     let gAutoOrigem, gAutoDestino;
     let rotaTimer = null;
+    let origemOk = false;
+    let destinoOk = false;
 
     function initGoogle(){
       if (!window.google?.maps) {
@@ -773,22 +775,32 @@
       const inputOrigem = el("origem");
       const inputDestino = el("destino");
 
-      gAutoOrigem = new google.maps.places.Autocomplete(inputOrigem, {
-        types: ["address"],
-        componentRestrictions: { country: "br" }
-      });
-      gAutoDestino = new google.maps.places.Autocomplete(inputDestino, {
-        types: ["address"],
-        componentRestrictions: { country: "br" }
+            gAutoOrigem = new google.maps.places.Autocomplete(inputOrigem, {
+              types: ["address"],
+              componentRestrictions: { country: "br" }
+            });
+            gAutoDestino = new google.maps.places.Autocomplete(inputDestino, {
+              types: ["address"],
+              componentRestrictions: { country: "br" }
+            });
+
+            gAutoOrigem.addListener("place_changed", () => {
+        origemOk = true;
+        scheduleRota();
       });
 
-      gAutoOrigem.addListener("place_changed", scheduleRota);
-      gAutoDestino.addListener("place_changed", scheduleRota);
+      gAutoDestino.addListener("place_changed", () => {
+        destinoOk = true;
+        scheduleRota();
+      });
 
-      inputOrigem.addEventListener("input", scheduleRota);
-      inputDestino.addEventListener("input", scheduleRota);
-      inputOrigem.addEventListener("blur", scheduleRota);
-      inputDestino.addEventListener("blur", scheduleRota);
+      // enquanto estiver digitando, invalida e NÃO calcula rota
+      inputOrigem.addEventListener("input", () => { origemOk = false; });
+      inputDestino.addEventListener("input", () => { destinoOk = false; });
+
+      // no blur, só tenta calcular se ambos já foram escolhidos
+      inputOrigem.addEventListener("blur", () => { if (origemOk && destinoOk) scheduleRota(); });
+      inputDestino.addEventListener("blur", () => { if (origemOk && destinoOk) scheduleRota(); });
 
       el("base_id").addEventListener("change", scheduleRota);
       el("veiculo_id").addEventListener("change", scheduleRota);
@@ -823,7 +835,7 @@
         const origem = (el("origem").value || "").trim();
         const destino = (el("destino").value || "").trim();
         const v = getVeiculoSelecionado();
-
+        if (!origemOk || !destinoOk) return;
         if (!b?.id || !b?.endereco) return;
         if (origem.length < 6 || destino.length < 6) return;
 
