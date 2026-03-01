@@ -1,179 +1,1211 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>SAM Guinchos</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SAM Guinchos</title>
 
-<style>
-body{
-  margin:0;
-  font-family: system-ui;
-  background:#0b1020;
-  color:#fff;
-}
-.container{max-width:1100px;margin:auto;padding:20px;}
-input,select{padding:10px;border-radius:8px;border:1px solid #333;background:#111;color:#fff;}
-button{padding:10px 14px;border-radius:8px;border:0;background:#3b82f6;color:#fff;font-weight:bold;cursor:pointer;}
-.status{font-size:12px;margin-top:6px}
-#loginOverlay{
-  position:fixed;inset:0;
-  background:#0b1020;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.loginCard{background:#111;padding:20px;border-radius:12px;width:300px;}
-</style>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#121a33;
+      --text:#e8ecff;
+      --muted:#a8b0d6;
+      --line:rgba(255,255,255,.08);
+      --primary:#3b82f6;
+      --primary2:#2563eb;
+      --danger:#ef4444;
+      --shadow: 0 20px 50px rgba(0,0,0,.35);
+      --radius: 16px;
+      --paramBg: rgba(255,255,255,.03);
+      --paramText: rgba(232,236,255,.78);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 800px at 10% 0%, #19214a 0%, var(--bg) 45%) fixed;
+      color:var(--text);
+    }
+    .container{ max-width:1100px; margin:0 auto; padding:28px 18px 42px; }
+    .topbar{ display:flex; gap:14px; align-items:center; justify-content:space-between; margin-bottom:18px; }
+    .brand{ display:flex; align-items:center; gap:12px; }
+    .logo{
+      width:72px; height:72px;
+      border-radius:16px;
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      overflow:hidden;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .logo img{
+      width:100%;
+      height:100%;
+      object-fit: contain;
+      padding:6px;
+      display:block;
+    }
+    .brand h1{ font-size:18px; line-height:1.1; margin:0; }
+    .brand p{ margin:2px 0 0; color:var(--muted); font-size:12px; }
+    .pill{
+      padding:8px 10px;border:1px solid var(--line);
+      background: rgba(255,255,255,.04);border-radius:999px;color:var(--muted);font-size:12px;
+    }
+    .grid{ display:grid; grid-template-columns: 1.15fr .85fr; gap:16px; }
+    @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .head{
+      padding:16px 16px 12px;
+      border-bottom:1px solid var(--line);
+      display:flex; align-items:flex-end; justify-content:space-between; gap:12px;
+    }
+    .card .head h2{ margin:0; font-size:14px; letter-spacing:.3px; }
+    .card .head small{ color:var(--muted); font-size:12px; }
+    .card .body{ padding:16px; }
+
+    .form{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    @media (max-width: 640px){ .form{ grid-template-columns:1fr; } }
+    label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+
+    input, select{
+      width:100%; padding:12px 12px;
+      border-radius: 12px;
+      border:1px solid var(--line);
+      background: rgba(8,12,28,.55);
+      color:var(--text);
+      outline:none;
+    }
+    input#origem, input#destino{ font-weight: 650; }
+    input::placeholder{ color: rgba(232,236,255,.4); }
+    input:focus, select:focus{
+      border-color: rgba(59,130,246,.55);
+      box-shadow: 0 0 0 4px rgba(59,130,246,.18);
+    }
+
+    /* Parametrizados/readonly com tonalidade diferente */
+    input[readonly], select[readonly], .param{
+      background: var(--paramBg) !important;
+      color: var(--paramText) !important;
+      border-color: rgba(255,255,255,.12) !important;
+    }
+    .muted-note{ font-size:11px; color: rgba(232,236,255,.55); margin-top:6px; }
+
+    .span-2{ grid-column: span 2; }
+    @media (max-width: 640px){ .span-2{ grid-column: span 1; } }
+
+    .row-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+
+    .btn{
+      border:0; padding:12px 14px; border-radius: 12px;
+      cursor:pointer; font-weight:700; color:white; background: var(--primary);
+      box-shadow: 0 14px 26px rgba(59,130,246,.25);
+    }
+    .btn:hover{ background: var(--primary2); }
+    .btn.secondary{
+      background: rgba(255,255,255,.07);
+      border:1px solid var(--line);
+      box-shadow:none;
+      color: var(--text);
+      font-weight:650;
+    }
+    .btn.secondary:hover{ background: rgba(255,255,255,.10); }
+
+    .summary{
+      padding:14px 16px;
+      border-top:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    }
+    .price{ font-size:22px; font-weight:900; letter-spacing:.2px; }
+    .hint{ color:var(--muted); font-size:12px; }
+
+    .status{
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px dashed var(--line);
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+      font-size:12px;
+    }
+    .status.danger{
+      color: #fecaca;
+      border-color: rgba(239,68,68,.35);
+      background: rgba(239,68,68,.08);
+    }
+    .status.ok{
+      border-style: solid;
+      border-color: rgba(59,130,246,.28);
+      background: rgba(59,130,246,.08);
+      color: rgba(232,236,255,.85);
+    }
+
+    #map{
+      width:100%;
+      height:360px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.08);
+      overflow:hidden;
+      background:rgba(0,0,0,.2);
+    }
+
+    /* Histórico */
+    .toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .toolbar .left{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .tablewrap{ overflow:auto; border:1px solid var(--line); border-radius: 14px; background: rgba(8,12,28,.45); }
+    table{ width:100%; border-collapse:collapse; min-width: 1120px; }
+    th, td{ padding:12px 12px; border-bottom:1px solid var(--line); font-size:12px; text-align:left; white-space:nowrap; }
+    th{ color:rgba(232,236,255,.85); font-weight:800; background: rgba(255,255,255,.03); position: sticky; top: 0; z-index: 1; }
+    td{ color: rgba(232,236,255,.9); }
+    tr:hover td{ background: rgba(255,255,255,.03); }
+
+    /* Identificação */
+    #boxIdentificacao .idbox{
+      display:grid;
+      grid-template-columns: 1.3fr 1fr .7fr;
+      gap:12px;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255,255,255,.03);
+    }
+    #boxIdentificacao .idlabel{
+      font-size:11px;
+      color: var(--muted);
+      margin-bottom:6px;
+    }
+    @media (max-width: 640px){
+      #boxIdentificacao .idbox{ grid-template-columns: 1fr; }
+    }
+
+    /* MODAL */
+    .modal-backdrop{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      z-index: 9999;
+    }
+    .modal{
+      width:min(520px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      box-shadow: 0 30px 90px rgba(0,0,0,.55);
+      overflow:hidden;
+    }
+    .modal .mhead{
+      padding:14px 16px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .modal .mhead strong{ font-size:13px; }
+    .modal .mbody{ padding:16px; color: rgba(232,236,255,.88); font-size:13px; line-height:1.35; }
+    .modal .mfoot{
+      padding:14px 16px;
+      border-top:1px solid rgba(255,255,255,.10);
+      display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;
+    }
+
+    /* LOGIN overlay */
+    #loginOverlay{
+      position: fixed; inset:0;
+      background: radial-gradient(1200px 800px at 10% 0%, #19214a 0%, var(--bg) 45%) fixed;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index: 10000;
+    }
+    .loginCard{
+      width:min(520px,100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      box-shadow: 0 30px 90px rgba(0,0,0,.55);
+      overflow:hidden;
+    }
+    .loginTop{
+      padding:18px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      display:flex; align-items:center; gap:12px;
+    }
+    .loginTop .logo{
+      width:64px; height:64px;
+    }
+    .loginBody{ padding:18px; }
+    .loginBody .form{ grid-template-columns:1fr; }
+    .loginActions{ display:flex; gap:10px; justify-content:space-between; align-items:center; margin-top:14px; flex-wrap:wrap; }
+    .loginMuted{ color: rgba(232,236,255,.55); font-size:12px; }
+  </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="loginOverlay">
-  <div class="loginCard">
-    <h3>Login</h3>
-    <input id="login_usuario" placeholder="Usuário"><br><br>
-    <input id="login_senha" type="password" placeholder="Senha"><br><br>
-    <button id="btnLogin">Entrar</button>
-    <div class="status" id="loginStatus"></div>
+  <!-- LOGIN -->
+  <div id="loginOverlay">
+    <div class="loginCard">
+      <div class="loginTop">
+        <div class="logo">
+          <img src="/logo_sam_transp.png?v=3" alt="SAM Guinchos">
+        </div>
+        <div>
+          <div style="font-weight:900; letter-spacing:.2px;">SAM Guinchos</div>
+          <div class="loginMuted">Acesso restrito • operadores</div>
+        </div>
+      </div>
+      <div class="loginBody">
+        <div class="form">
+          <div>
+            <label>Usuário</label>
+            <input id="login_usuario" autocomplete="username" placeholder="admin" />
+          </div>
+          <div>
+            <label>Senha</label>
+            <input id="login_senha" type="password" autocomplete="current-password" placeholder="••••••••" />
+          </div>
+        </div>
+        <div class="loginActions">
+          <div class="status" id="loginStatus">Informe usuário e senha.</div>
+          <button class="btn" id="btnLogin" type="button">Entrar</button>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
 
-<div class="container" id="appRoot" style="display:none">
-  <h2>SAM Guinchos</h2>
+  <!-- MODAL NOVO CLIENTE -->
+  <div class="modal-backdrop" id="modalNovoCliente">
+    <div class="modal">
+      <div class="mhead">
+        <strong>Novo cliente</strong>
+        <span class="pill" id="modalTel">telefone</span>
+      </div>
+      <div class="mbody">
+        Não encontrei este telefone no cadastro.<br><br>
+        Tem certeza que deseja <b>cadastrar um novo cliente</b> com este telefone?
+      </div>
+      <div class="mfoot">
+        <button class="btn secondary" id="btnNovoNao" type="button">Não</button>
+        <button class="btn" id="btnNovoSim" type="button">Sim, cadastrar</button>
+      </div>
+    </div>
+  </div>
 
-  <button id="btnLogout">Sair</button>
+  <div class="container" id="appRoot">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" id="logoBox">
+          <img src="/logo_sam_transp.png?v=3" alt="SAM Guinchos">
+        </div>
+        <div>
+          <h1>SAM Guinchos</h1>
+          <p>Orçamentos • Bases • Veículos • Pedágio • Líquido</p>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <div class="pill" id="envInfo">Ambiente: Codespaces</div>
+        <button class="btn secondary" id="btnLogout" type="button">Sair</button>
+      </div>
+    </div>
 
-  <hr>
+    <div class="grid">
+      <!-- FORM -->
+      <div class="card">
+        <div class="head">
+          <div>
+            <h2>Novo orçamento</h2>
+            <small>Base + Tipo de contato + Veículo • KM automático • custos e líquido.</small>
+          </div>
+          <span class="pill">v0.6 • login + cliente por telefone</span>
+        </div>
 
-  <h3>Cliente</h3>
-  <input id="cliente_nome" placeholder="Nome">
-  <input id="cliente_telefone" placeholder="Telefone">
-  <div id="telHint" class="status"></div>
+        <div class="body">
+          <div class="form">
+            <div>
+              <label>Base</label>
+              <select id="base_id"></select>
+            </div>
 
-  <hr>
+            <div>
+              <label>Tipo de contato</label>
+              <select id="tipo_contato">
+                <option value="">Selecione...</option>
+                <option value="particular">Particular</option>
+                <option value="cooperativa">Cooperativa</option>
+                <option value="seguradora">Seguradora</option>
+                <option value="oficina">Oficina</option>
+                <option value="outros">Outros</option>
+              </select>
+            </div>
 
-  <h3>Histórico</h3>
-  <button id="btnAtualizarHist">Atualizar</button>
-  <div id="histBody"></div>
-</div>
+            <div class="span-2">
+              <label>Veículo (cadastro)</label>
+              <select id="veiculo_id"></select>
+            </div>
 
-<script>
-const el = id => document.getElementById(id);
+            <div class="span-2" id="boxIdentificacao">
+              <label>Identificação (Cliente • Telefone • Placa)</label>
+              <div class="idbox">
+                <div>
+                  <div class="idlabel">Nome do cliente</div>
+                  <input id="cliente_nome" placeholder="Nome do cliente" />
+                </div>
 
-// ================= LOGIN =================
-async function checkAuth(){
-  const r = await fetch("/me",{credentials:"include"});
-  const j = await r.json().catch(()=> ({}));
-  return !!(j && j.ok && j.user);
-}
+                <div>
+                  <div class="idlabel">Telefone (chave)</div>
+                  <input id="cliente_telefone" placeholder="(11) 99999-9999" inputmode="tel" />
+                  <div class="muted-note" id="telHint">Digite o telefone para buscar automaticamente.</div>
+                </div>
 
-function showLogin(msg){
-  el("loginOverlay").style.display="flex";
-  el("appRoot").style.display="none";
-  el("loginStatus").textContent=msg||"Informe usuário e senha.";
-}
+                <div>
+                  <div class="idlabel">Placa</div>
+                  <input id="placa" placeholder="ABC1D23" />
+                </div>
+              </div>
+            </div>
 
-function hideLogin(){
-  el("loginOverlay").style.display="none";
-  el("appRoot").style.display="block";
-}
+            <div class="span-2">
+              <label>Origem (Coleta)</label>
+              <input id="origem" placeholder="Digite e escolha uma sugestão..." autocomplete="off" />
+            </div>
 
-async function doLogin(){
-  const usuario = (el("login_usuario").value||"").trim();
-  const senha = (el("login_senha").value||"").trim();
+            <div class="span-2">
+              <label>Destino</label>
+              <input id="destino" placeholder="Digite e escolha uma sugestão..." autocomplete="off" />
+            </div>
 
-  if(!usuario || !senha){
-    el("loginStatus").textContent="Informe usuário e senha.";
-    return;
-  }
+            <div>
+              <label>Manutenção (%)</label>
+              <input id="manutencao_percent" inputmode="decimal" value="6.5" />
+            </div>
 
-  el("loginStatus").textContent="Validando...";
+            <div>
+              <label>Diesel (R$/L)</label>
+              <input id="diesel_preco_litro" inputmode="decimal" value="6.17" />
+            </div>
 
-  const r = await fetch("/auth/login",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    credentials:"include",
-    body: JSON.stringify({ usuario, senha })
-  });
+            <div>
+              <label>Pedágio total (R$) (ida+volta)</label>
+              <input id="pedagio_total" inputmode="decimal" placeholder="0,00" />
+            </div>
 
-  const j = await r.json().catch(()=> ({}));
+            <div>
+              <label>Combustível (R$)</label>
+              <input id="combustivel_valor" readonly />
+            </div>
 
-  if(!r.ok){
-    el("loginStatus").textContent=j.error||"Falha no login.";
-    return;
-  }
+            <div class="span-2">
+              <label>Líquido (R$) / Margem líquida por KM</label>
+              <input id="liquido_margem" readonly />
+            </div>
 
-  hideLogin();
-  await initApp();
-}
+            <div>
+              <label>Valor Saída (parametrizado)</label>
+              <input id="saida" inputmode="decimal" placeholder="200" />
+            </div>
 
-async function doLogout(){
-  await fetch("/auth/logout",{method:"POST",credentials:"include"});
-  showLogin("Você saiu.");
-}
+            <div>
+              <label>Valor KM (parametrizado)</label>
+              <input id="km_valor" inputmode="decimal" placeholder="2.85" />
+            </div>
 
-// ================= TELEFONE =================
-function normalizePhone(v){return String(v||"").replace(/\D/g,"");}
+            <div>
+              <label>KM (auto)</label>
+              <input id="km" inputmode="decimal" placeholder="0.0" class="param" />
+            </div>
 
-async function lookupTelefone(){
-  const tel = el("cliente_telefone").value;
-  if(normalizePhone(tel).length<8) return;
+            <div>
+              <label>Categoria</label>
+              <select id="categoria">
+                <option>leve</option>
+                <option>utilitario</option>
+                <option>medio</option>
+                <option>pesado</option>
+                <option>super</option>
+              </select>
+            </div>
+          </div>
 
-  el("telHint").textContent="Buscando...";
+          <div class="row-actions">
+            <button class="btn" id="btnCalcular" type="button">Recalcular</button>
+            <button class="btn secondary" id="btnLimpar" type="button">Limpar</button>
+            <button class="btn secondary" id="btnRecarregar" type="button">Recarregar listas</button>
+          </div>
+        </div>
 
-  const r = await fetch(`/cliente_por_telefone?telefone=${encodeURIComponent(tel)}`,{
-    credentials:"include"
-  });
+        <div class="summary">
+          <div>
+            <div class="hint">Total bruto</div>
+            <div class="price" id="valorFinal">R$ 0,00</div>
+            <div class="hint" id="subResumo"></div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <div class="status" id="statusBox">Pronto.</div>
+            <button class="btn" id="btnSalvar" type="button">Salvar orçamento</button>
+          </div>
+        </div>
+      </div>
 
-  if(r.status===404){
-    el("telHint").textContent="Não cadastrado.";
-    return;
-  }
+      <!-- MAPA -->
+      <div class="card">
+        <div class="head">
+          <div>
+            <h2>Mapa</h2>
+            <small>Google Maps • rota 4 pernas</small>
+          </div>
+        </div>
 
-  const j = await r.json().catch(()=> ({}));
-  if(!r.ok){
-    el("telHint").textContent="Erro ao buscar.";
-    return;
-  }
+        <div class="body">
+          <div class="status" id="mapHint">
+            Selecione base e escolha origem/destino nas sugestões.
+          </div>
 
-  el("cliente_nome").value=j.nome||"";
-  el("telHint").textContent="Cliente carregado.";
-}
+          <div style="height:12px"></div>
+          <div id="map"></div>
+          <div style="height:12px"></div>
 
-// ================= HISTÓRICO =================
-async function carregarHistorico(){
-  const r = await fetch("/orcamentos",{credentials:"include"});
-  if(!r.ok){
-    el("histBody").textContent="Erro "+r.status;
-    return;
-  }
-  const j = await r.json().catch(()=> []);
-  el("histBody").textContent=JSON.stringify(j,null,2);
-}
+          <div class="hint">
+            Dica: se “não atualizar”, use Ctrl+Shift+R.
+          </div>
+        </div>
+      </div>
+    </div>
 
-// ================= INIT =================
-async function initApp(){
-  await carregarHistorico();
-}
+    <!-- HISTÓRICO -->
+    <div class="card" style="margin-top:16px;">
+      <div class="head">
+        <div>
+          <h2>Histórico de orçamentos</h2>
+          <small>Mostra identificação, bruto, pedágio, combustível, líquido e margem/km</small>
+        </div>
+        <span class="pill" id="histCount">0 itens</span>
+      </div>
 
-// ================= BOOT =================
-(async function(){
-  const ok = await checkAuth();
-  if(!ok){
-    showLogin();
-    return;
-  }
-  hideLogin();
-  await initApp();
-})();
+      <div class="body">
+        <div class="toolbar">
+          <div class="left">
+            <input id="filtroTexto" placeholder="Filtrar..." style="min-width:320px;" />
+            <select id="filtroCategoria" style="width:180px;">
+              <option value="">Todas categorias</option>
+              <option value="leve">leve</option>
+              <option value="utilitario">utilitario</option>
+              <option value="medio">medio</option>
+              <option value="pesado">pesado</option>
+              <option value="super">super</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn secondary" id="btnAtualizarHist" type="button">Atualizar</button>
+            <button class="btn secondary" id="btnLimparFiltros" type="button">Limpar filtros</button>
+          </div>
+        </div>
 
-el("btnLogin").addEventListener("click",doLogin);
-el("btnLogout").addEventListener("click",doLogout);
-el("cliente_telefone").addEventListener("blur",lookupTelefone);
-el("btnAtualizarHist").addEventListener("click",carregarHistorico);
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Base</th>
+                <th>Tipo</th>
+                <th>Cliente</th>
+                <th>Telefone</th>
+                <th>Placa</th>
+                <th>Veículo</th>
+                <th>KM</th>
+                <th>Bruto</th>
+                <th>Pedágio</th>
+                <th>Comb.</th>
+                <th>Manut.</th>
+                <th>Coop.</th>
+                <th>Líquido</th>
+                <th>R$/KM</th>
+                <th>Origem</th>
+                <th>Destino</th>
+              </tr>
+            </thead>
+            <tbody id="histBody">
+              <tr><td colspan="17" style="color:rgba(232,236,255,.6);">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
-</script>
+  <script>
+    let bases = [];
+    let veiculos = [];
+    let historico = [];
+    let histTimer = null;
+
+    const el = (id) => document.getElementById(id);
+
+    // contador global de requisições de rota (para ignorar respostas antigas)
+    window.rotaReqId = Number.isFinite(window.rotaReqId) ? window.rotaReqId : 0;
+
+    // ====== LOGIN ======
+    async function checkAuth() {
+      const r = await fetch("/me", { cache:"no-store", credentials:"include" });
+      const j = await r.json().catch(()=> ({}));
+      return !!j?.logged;
+    }
+
+    function showLogin(msg) {
+      el("loginOverlay").style.display = "flex";
+      setLoginStatus(msg || "Informe usuário e senha.", "ok");
+    }
+
+    function hideLogin() {
+      el("loginOverlay").style.display = "none";
+    }
+
+    function setLoginStatus(msg, type="ok"){
+      const box = el("loginStatus");
+      box.textContent = msg;
+      box.classList.remove("danger","ok");
+      box.classList.add(type === "danger" ? "danger" : "ok");
+    }
+
+    async function doLogin(){
+      const usuario = (el("login_usuario").value || "").trim();
+      const senha = (el("login_senha").value || "").trim();
+      if(!usuario || !senha) return setLoginStatus("Informe usuário e senha.", "danger");
+
+      setLoginStatus("Validando...", "ok");
+
+            const r = await fetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        credentials: "include",
+        body: JSON.stringify({ usuario, senha })
+      });
+      const j = await r.json().catch(()=> ({}));
+
+      if(!r.ok){
+        setLoginStatus(j.error || "Falha no login.", "danger");
+        return;
+      }
+
+      hideLogin();
+      await initApp();
+    }
+
+    async function doLogout(){
+      await fetch("/auth/logout", { method:"POST",cache: "no-store", }, ).catch(()=>{});
+      showLogin("Você saiu. Faça login novamente.");
+    }
+
+    // ====== MODAL NOVO CLIENTE ======
+    const modal = {
+      open(tel){
+        el("modalTel").textContent = tel;
+        el("modalNovoCliente").style.display = "flex";
+      },
+      close(){
+        el("modalNovoCliente").style.display = "none";
+      }
+    };
+
+    // ====== TELEFONE: LOOKUP + CONFIRMAÇÃO ======
+    let phoneTimer = null;
+    let lastTelNorm = "";
+    let pendingNewClient = null; // { tel, nome, tipo_contato }
+
+    function normalizePhone(v){ return String(v || "").replace(/\D/g, ""); }
+
+    function markParam(elm, isParam){
+      if(!elm) return;
+      if(isParam) elm.classList.add("param");
+      else elm.classList.remove("param");
+    }
+
+    async function lookupTelefoneDebounced(){
+      if(phoneTimer) clearTimeout(phoneTimer);
+      phoneTimer = setTimeout(async () => {
+        await lookupTelefone();
+      }, 450);
+    }
+
+    async function lookupTelefone(){
+      const tel = (el("cliente_telefone").value || "").trim();
+      const telNorm = normalizePhone(tel);
+
+      el("telHint").textContent = "Digite o telefone para buscar automaticamente.";
+
+      if(telNorm.length < 8) return;
+
+      if(telNorm === lastTelNorm) return;
+      lastTelNorm = telNorm;
+
+      el("telHint").textContent = "Buscando cliente...";
+
+      const r = await fetch(`/clientes/lookup?telefone=${encodeURIComponent(tel)}`, { cache:"no-store",
+    credentials: "include" });
+      const j = await r.json().catch(()=> ({}));
+
+      if(!r.ok){
+        el("telHint").textContent = j.error ? `Erro: ${j.error}` : "Erro ao buscar cliente.";
+        return;
+      }
+
+      if(j.found && j.cliente){
+        const c = j.cliente;
+
+        el("cliente_nome").value = c.nome || "";
+        el("cliente_telefone").value = c.telefone || tel;
+        el("telHint").textContent = "Cliente carregado automaticamente ✅";
+
+        if (c.valor_saida != null) { el("saida").value = c.valor_saida; markParam(el("saida"), true); }
+        if (c.valor_km != null) { el("km_valor").value = c.valor_km; markParam(el("km_valor"), true); }
+
+        const tipoSel = el("tipo_contato");
+        if(!tipoSel.value && c.tipo) tipoSel.value = String(c.tipo).toLowerCase();
+
+        recomputarTudo();
+        return;
+      }
+
+      el("telHint").textContent = "Telefone não cadastrado.";
+      pendingNewClient = {
+        tel,
+        nome: (el("cliente_nome").value || "").trim(),
+        tipo_contato: (el("tipo_contato").value || "").trim()
+      };
+      modal.open(tel);
+    }
+
+    async function createClientFromPending(){
+      if(!pendingNewClient) return;
+      const tipo = pendingNewClient.tipo_contato || "particular";
+      const nome = (el("cliente_nome").value || "").trim();
+      const telefone = (el("cliente_telefone").value || "").trim();
+
+      if(!nome){
+        modal.close();
+        setStatus("Informe o nome do cliente antes de cadastrar.", "danger");
+        el("cliente_nome").focus();
+        return;
+      }
+      if(normalizePhone(telefone).length < 8){
+        modal.close();
+        setStatus("Telefone inválido para cadastrar.", "danger");
+        el("cliente_telefone").focus();
+        return;
+      }
+
+      modal.close();
+      setStatus("Cadastrando cliente...", "ok");
+
+      const r = await fetch("/cliente", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          nome,
+          telefone,
+          tipo,
+          valor_saida: num(el("saida").value || 200),
+          valor_km: num(el("km_valor").value || 2.85)
+        })
+      });
+
+      const j = await r.json().catch(()=> ({}));
+      if(!r.ok){
+        setStatus(j.error || "Erro ao cadastrar cliente.", "danger");
+        return;
+      }
+
+      setStatus("Cliente cadastrado ✅", "ok");
+      el("telHint").textContent = "Cliente cadastrado e carregado ✅";
+      pendingNewClient = null;
+    }
+
+    // ====== GOOGLE MAPS ======
+    let gmap, gDirectionsService, gDirectionsRenderer;
+    let gAutoOrigem, gAutoDestino;
+    let rotaTimer = null;
+
+    function initGoogle(){
+      if (!window.google?.maps) {
+        setStatus("Google Maps não carregou (verifique API key/domínio).", "danger");
+        return;
+      }
+
+      gmap = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: -23.3649, lng: -46.7406 },
+        zoom: 12,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false
+      });
+
+      gDirectionsService = new google.maps.DirectionsService();
+      gDirectionsRenderer = new google.maps.DirectionsRenderer({
+        map: gmap,
+        suppressMarkers: false
+      });
+
+      const inputOrigem = el("origem");
+      const inputDestino = el("destino");
+
+      gAutoOrigem = new google.maps.places.Autocomplete(inputOrigem, {
+        types: ["address"],
+        componentRestrictions: { country: "br" }
+      });
+      gAutoDestino = new google.maps.places.Autocomplete(inputDestino, {
+        types: ["address"],
+        componentRestrictions: { country: "br" }
+      });
+
+      gAutoOrigem.addListener("place_changed", scheduleRota);
+      gAutoDestino.addListener("place_changed", scheduleRota);
+
+      inputOrigem.addEventListener("input", scheduleRota);
+      inputDestino.addEventListener("input", scheduleRota);
+      inputOrigem.addEventListener("blur", scheduleRota);
+      inputDestino.addEventListener("blur", scheduleRota);
+
+      el("base_id").addEventListener("change", scheduleRota);
+      el("veiculo_id").addEventListener("change", scheduleRota);
+
+      scheduleRota();
+    }
+
+    function scheduleRota(){
+      if(rotaTimer) clearTimeout(rotaTimer);
+      rotaTimer = setTimeout(() => atualizarRota(), 800);
+    }
+
+    function getBaseSelecionada() {
+      const select = el("base_id");
+      if (!select) return null;
+
+      const id = select.value;
+      const opt = select.options[select.selectedIndex];
+      if (!id) return null;
+
+      return {
+        id,
+        endereco: decodeURIComponent(opt?.dataset?.endereco || "")
+      };
+    }
+
+    async function atualizarRota() {
+      const myReq = (window.rotaReqId += 1);
+
+      try {
+        const b = getBaseSelecionada();
+        const origem = (el("origem").value || "").trim();
+        const destino = (el("destino").value || "").trim();
+        const v = getVeiculoSelecionado();
+
+        if (!b?.id || !b?.endereco) return;
+        if (origem.length < 6 || destino.length < 6) return;
+
+        if (!window.google?.maps) {
+          setStatus("Google Maps não carregou (verifique API key/domínio autorizado).", "danger");
+          return;
+        }
+        if (!gDirectionsService || !gDirectionsRenderer) {
+          setStatus("Maps ainda inicializando...", "danger");
+          return;
+        }
+
+        setStatus("Calculando rota e KM...", "ok");
+
+        const request = {
+          origin: b.endereco,
+          destination: b.endereco,
+          waypoints: [
+            { location: origem, stopover: true },
+            { location: destino, stopover: true }
+          ],
+          optimizeWaypoints: false,
+          travelMode: google.maps.TravelMode.DRIVING
+        };
+
+        gDirectionsService.route(request, async (result, status) => {
+          if (myReq !== window.rotaReqId) return;
+
+          const origemNow = (el("origem").value || "").trim();
+          const destinoNow = (el("destino").value || "").trim();
+          if (origemNow !== origem || destinoNow !== destino) return;
+
+          if (status !== "OK" || !result?.routes?.length) {
+            console.error("Directions error:", status, result);
+            setStatus("Não foi possível calcular rota no Maps.", "danger");
+            return;
+          }
+
+          try { gDirectionsRenderer.setDirections(result); } catch (e) {}
+
+          const legs = result.routes[0]?.legs || [];
+          const meters = legs.reduce((sum, leg) => sum + (Number(leg?.distance?.value) || 0), 0);
+          const kmTotalMaps = meters / 1000;
+          if (Number.isFinite(kmTotalMaps) && kmTotalMaps > 0) {
+            el("km").value = kmTotalMaps.toFixed(1);
+          }
+
+          recomputarTudo();
+          const kmFinal = Number(el("km").value) || 0;
+          setStatus(`KM: ${kmFinal.toFixed(1)} ✅`, "ok");
+        });
+
+      } catch (e) {
+        console.error(e);
+        if (myReq === window.rotaReqId) setStatus("Erro ao atualizar rota.", "danger");
+      }
+    }
+
+    // ====== HELPERS ======
+    function setStatus(msg, type="ok"){
+      const box = el("statusBox");
+      box.textContent = msg;
+      box.classList.remove("danger","ok");
+      box.classList.add(type === "danger" ? "danger" : "ok");
+    }
+    function moneyBR(v){
+      const n = Number(v || 0);
+      return n.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+    }
+    function num(v){ return Number(String(v ?? "").replace(",", ".")) || 0; }
+    function fmtDate(dt){
+      if(!dt) return "";
+      const d = new Date(dt);
+      if(Number.isNaN(d.getTime())) return "";
+      return d.toLocaleString("pt-BR", { dateStyle:"short", timeStyle:"short" });
+    }
+
+    // ====== LOADERS ======
+    async function carregarBases(){
+      const r = await fetch("/bases", { cache: "no-store" ,credentials: "include"});
+      const d = await r.json().catch(()=> []);
+      bases = Array.isArray(d) ? d : [];
+
+      const select = el("base_id");
+      const current = select.value;
+
+      select.innerHTML =
+        `<option value="">Selecione a base...</option>` +
+        bases.map(b =>
+          `<option value="${b.id}" data-endereco="${encodeURIComponent(b.endereco || "")}">
+            ${b.nome || "Base"} - ${b.endereco || ""}
+          </option>`
+        ).join("");
+
+      if (current) select.value = current;
+    }
+
+    async function carregarVeiculos(){
+      const r = await fetch("/veiculos", { cache: "no-store",credentials: "include" });
+      const d = await r.json().catch(()=> []);
+      veiculos = Array.isArray(d) ? d : [];
+      const select = el("veiculo_id");
+      const current = select.value;
+
+      select.innerHTML = `<option value="">Selecione...</option>` + veiculos.map(v =>
+        `<option value="${v.id}">${v.nome} • ${v.km_por_litro} km/L • ${v.eixos} eixos • ${v.classe}</option>`
+      ).join("");
+
+      if (current) select.value = current;
+    }
+
+    function getVeiculoSelecionado(){
+      const id = el("veiculo_id").value;
+      return veiculos.find(v => String(v.id) === String(id));
+    }
+
+    // ====== CÁLCULOS ======
+    function calcularBruto(){
+      const saida = num(el("saida").value);
+      const valor_km = num(el("km_valor").value);
+      const km = num(el("km").value);
+      return saida + (km * valor_km);
+    }
+
+    function recomputarTudo(){
+      const bruto = calcularBruto();
+      el("valorFinal").textContent = moneyBR(bruto);
+
+      const manutPct = num(el("manutencao_percent").value || 6.5);
+      const diesel = num(el("diesel_preco_litro").value || 6.17);
+      const km = num(el("km").value);
+
+      const v = getVeiculoSelecionado();
+      const kmPorLitro = num(v?.km_por_litro);
+
+      const pedagio = num(el("pedagio_total").value);
+
+      const manut = bruto * (manutPct/100);
+      const combust = kmPorLitro > 0 ? (km / kmPorLitro) * diesel : 0;
+
+      el("combustivel_valor").value = moneyBR(combust);
+
+      const tipo = (el("tipo_contato").value || "").toLowerCase();
+      const coopPct = (tipo === "cooperativa") ? 20 : 0;
+      const coop = bruto * (coopPct/100);
+
+      const liquido = bruto - pedagio - manut - combust - coop;
+      const margemKm = km > 0 ? (liquido / km) : 0;
+
+      el("liquido_margem").value = `${moneyBR(liquido)}  •  ${moneyBR(margemKm)}/km`;
+      el("subResumo").textContent =
+        `Pedágio: ${moneyBR(pedagio)} • Manut.: ${moneyBR(manut)} • Comb.: ${moneyBR(combust)} • Coop.: ${moneyBR(coopPct ? coop : 0)}`;
+
+      return { bruto, manutPct, diesel, kmPorLitro, pedagio };
+    }
+
+    // ====== SAVE ======
+    async function salvar(){
+      try{
+        const baseId = el("base_id").value;
+        const veiculoId = el("veiculo_id").value;
+        const tipoContato = el("tipo_contato").value;
+
+        if(!baseId) return setStatus("Selecione uma base.", "danger");
+        if(!tipoContato) return setStatus("Selecione o tipo de contato.", "danger");
+        if(!veiculoId) return setStatus("Selecione um veículo.", "danger");
+
+        const clienteNome = (el("cliente_nome").value || "").trim();
+        const clienteTelefone = (el("cliente_telefone").value || "").trim();
+        const placa = (el("placa").value || "").trim();
+
+        if(!clienteNome) return setStatus("Informe o nome do cliente.", "danger");
+        if(normalizePhone(clienteTelefone).length < 8) return setStatus("Informe um telefone válido.", "danger");
+
+        const origem = (el("origem").value || "").trim();
+        const destino = (el("destino").value || "").trim();
+        if(!origem || !destino) return setStatus("Informe origem e destino.", "danger");
+
+        const custos = recomputarTudo();
+
+        const payload = {
+          base_id: baseId,
+          veiculo_id: veiculoId,
+          tipo_contato: tipoContato,
+
+          cliente_nome: clienteNome,
+          cliente_telefone: clienteTelefone,
+
+          valor_saida: num(el("saida").value),
+          valor_km: num(el("km_valor").value),
+          km_total: num(el("km").value),
+
+          categoria: el("categoria").value,
+          placa,
+
+          origem,
+          destino,
+
+          manutencao_percent: num(el("manutencao_percent").value || 6.5),
+          diesel_preco_litro: num(el("diesel_preco_litro").value || 6.17),
+          km_por_litro: custos.kmPorLitro,
+          pedagio_total: num(el("pedagio_total").value),
+        };
+
+        const r = await fetch("/orcamento", {
+          method:"POST",
+          credentials: "include",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const j = await r.json().catch(()=> ({}));
+        if(!r.ok){
+          console.error(j);
+          setStatus(j.error || "Erro ao salvar.", "danger");
+          alert("Erro ao salvar. Veja console (F12).");
+          return;
+        }
+
+        setStatus("Orçamento salvo ✅", "ok");
+        await carregarHistorico();
+      }catch(e){
+        console.error(e);
+        setStatus("Erro ao salvar.", "danger");
+      }
+    }
+
+    function limparFormulario(){
+      el("cliente_nome").value = "";
+      el("cliente_telefone").value = "";
+      el("placa").value = "";
+      el("origem").value = "";
+      el("destino").value = "";
+      el("km").value = "";
+      el("pedagio_total").value = "";
+      el("combustivel_valor").value = "";
+      el("liquido_margem").value = "";
+      el("telHint").textContent = "Digite o telefone para buscar automaticamente.";
+      setStatus("Formulário limpo.", "ok");
+
+      markParam(el("saida"), false);
+      markParam(el("km_valor"), false);
+
+      recomputarTudo();
+      scheduleRota();
+    }
+
+    // ====== HISTÓRICO ======
+    async function carregarHistorico(){
+      try{
+        const r = await fetch(`/orcamentos?_ts=${Date.now()}`, { cache:"no-store" });
+
+        if(!r.ok){
+          const txt = await r.text().catch(()=> "");
+          console.error("GET /orcamentos falhou:", r.status, txt);
+          historico = [];
+          el("histCount").textContent = `0 itens`;
+          el("histBody").innerHTML =
+            `<tr><td colspan="17" style="color:rgba(232,236,255,.6);">Histórico indisponível (${r.status}).</td></tr>`;
+          return;
+        }
+
+        const d = await r.json().catch(()=> []);
+        historico = Array.isArray(d) ? d : [];
+        el("histCount").textContent = `${historico.length} itens`;
+        renderHistorico();
+      }catch(e){
+        console.error(e);
+        el("histBody").innerHTML =
+          `<tr><td colspan="17" style="color:rgba(232,236,255,.6);">Erro ao carregar histórico.</td></tr>`;
+      }
+    }
+
+    function renderHistorico(){
+      const q = (el("filtroTexto").value || "").toLowerCase().trim();
+      const cat = el("filtroCategoria").value || "";
+
+      const rows = historico.filter(o => {
+        if(cat && String(o.categoria || "").toLowerCase() !== cat) return false;
+        if(!q) return true;
+        const hay = [
+          o.tipo_contato,
+          o.cliente_nome, o.cliente,
+          o.cliente_telefone,
+          o.base_nome, o.base,
+          o.veiculo,
+          o.placa, o.origem, o.destino, o.categoria, o.status
+        ].filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+
+      el("histCount").textContent = `${rows.length} itens`;
+
+      if(!rows.length){
+        el("histBody").innerHTML = `<tr><td colspan="17" style="color:rgba(232,236,255,.6);">Sem registros.</td></tr>`;
+        return;
+      }
+
+      el("histBody").innerHTML = rows.map(o => `
+        <tr>
+          <td>${fmtDate(o.created_at || o.data || o.createdAt)}</td>
+          <td>${o.base_nome ?? ""}</td>
+          <td>${o.tipo_contato ?? ""}</td>
+          <td>${o.cliente_nome ?? o.cliente ?? ""}</td>
+          <td>${o.cliente_telefone ?? ""}</td>
+          <td>${o.placa ?? ""}</td>
+          <td>${o.veiculo ?? ""}</td>
+          <td>${(o.km_total ?? o.km ?? "")}</td>
+          <td>${moneyBR(o.valor_bruto ?? o.valor_total ?? o.valor ?? 0)}</td>
+          <td>${moneyBR(o.pedagio_total ?? 0)}</td>
+          <td>${moneyBR(o.combustivel_valor ?? 0)}</td>
+          <td>${moneyBR(o.manutencao_valor ?? 0)}</td>
+          <td>${moneyBR(o.cooperativa_valor ?? 0)}</td>
+          <td>${moneyBR(o.valor_liquido ?? 0)}</td>
+          <td>${moneyBR(o.margem_liquida_km ?? 0)}</td>
+          <td title="${(o.origem ?? "")}">${(o.origem ?? "").slice(0,26)}</td>
+          <td title="${(o.destino ?? "")}">${(o.destino ?? "").slice(0,26)}</td>
+        </tr>
+      `).join("");
+    }
+
+    // ====== APP INIT ======
+    async function initApp(){
+      await carregarBases();
+      await carregarVeiculos();
+      await carregarHistorico();
+      iniciarAutoRefreshHistorico();
+      recomputarTudo();
+
+      if(window.google?.maps) initGoogle();
+      setStatus("Pronto ✅", "ok");
+    }
+
+    function iniciarAutoRefreshHistorico(){
+      if(histTimer) clearInterval(histTimer);
+      histTimer = setInterval(() => carregarHistorico(), 10000);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) carregarHistorico(); });
+      window.addEventListener("focus", () => carregarHistorico());
+    }
+
+    // ====== LISTENERS ======
+    el("btnLogin").addEventListener("click", doLogin);
+    el("login_senha").addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
+    el("btnLogout").addEventListener("click", doLogout);
+
+    el("btnNovoNao").addEventListener("click", ()=>{ pendingNewClient = null; modal.close(); });
+    el("btnNovoSim").addEventListener("click", createClientFromPending);
+
+    el("cliente_telefone").addEventListener("input", lookupTelefoneDebounced);
+    el("cliente_telefone").addEventListener("blur", lookupTelefoneDebounced);
+
+    el("tipo_contato").addEventListener("change", ()=>{ recomputarTudo(); });
+
+    el("btnCalcular").addEventListener("click", () => { recomputarTudo(); scheduleRota(); });
+    el("btnSalvar").addEventListener("click", salvar);
+    el("btnLimpar").addEventListener("click", limparFormulario);
+
+    el("btnRecarregar").addEventListener("click", async () => {
+      await carregarBases();
+      await carregarVeiculos();
+      setStatus("Listas recarregadas.", "ok");
+      scheduleRota();
+    });
+
+    el("btnAtualizarHist").addEventListener("click", carregarHistorico);
+    el("btnLimparFiltros").addEventListener("click", () => {
+      el("filtroTexto").value = "";
+      el("filtroCategoria").value = "";
+      renderHistorico();
+    });
+    el("filtroTexto").addEventListener("input", renderHistorico);
+    el("filtroCategoria").addEventListener("change", renderHistorico);
+
+    ["pedagio_total","manutencao_percent","diesel_preco_litro","saida","km_valor","km"].forEach(id => {
+      const x = el(id);
+      if (x) x.addEventListener("input", () => recomputarTudo());
+    });
+
+    // ====== BOOT ======
+    (async function boot(){
+      const ok = await checkAuth().catch(()=> false);
+      if(!ok){
+        showLogin();
+        return;
+      }
+      await initApp();
+    })();
+
+    // expõe pro callback do google
+    window.initGoogle = initGoogle;
+  </script>
+
+  <!-- Google Maps + Places (KEY NO FRONT) -->
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAKkex4PTmvzwa-xuZawwmnnaZrpP5Z6ug&libraries=places&callback=initGoogle&loading=async"
+    async
+    defer
+  ></script>
 </body>
 </html>
