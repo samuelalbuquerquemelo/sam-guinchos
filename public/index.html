@@ -649,7 +649,7 @@
 
       el("telHint").textContent = "Buscando cliente...";
 
-      const r = await fetch(`/clientes/lookup?telefone=${encodeURIComponent(tel)}`, { cache:"no-store",
+      const r = await fetch(`/cliente_por_telefone?telefone=${encodeURIComponent(tel)}`, { cache:"no-store",
     credentials: "include" });
       const j = await r.json().catch(()=> ({}));
 

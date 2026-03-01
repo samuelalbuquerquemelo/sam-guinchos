@@ -637,52 +637,62 @@
     }
 
     async function lookupTelefone(){
-      const tel = (el("cliente_telefone").value || "").trim();
-      const telNorm = normalizePhone(tel);
+  const tel = (el("cliente_telefone").value || "").trim();
+  const telNorm = normalizePhone(tel);
 
-      el("telHint").textContent = "Digite o telefone para buscar automaticamente.";
+  el("telHint").textContent = "Digite o telefone para buscar automaticamente.";
 
-      if(telNorm.length < 8) return;
+  if (telNorm.length < 8) return;
 
-      if(telNorm === lastTelNorm) return;
-      lastTelNorm = telNorm;
+  if (telNorm === lastTelNorm) return;
+  lastTelNorm = telNorm;
 
-      el("telHint").textContent = "Buscando cliente...";
+  el("telHint").textContent = "Buscando cliente...";
 
-      const r = await fetch(`/clientes/lookup?telefone=${encodeURIComponent(tel)}`, { cache:"no-store",
-    credentials: "include" });
-      const j = await r.json().catch(()=> ({}));
+  const r = await fetch(`/cliente_por_telefone?telefone=${encodeURIComponent(tel)}`, {
+    cache: "no-store",
+    credentials: "include"
+  });
 
-      if(!r.ok){
-        el("telHint").textContent = j.error ? `Erro: ${j.error}` : "Erro ao buscar cliente.";
-        return;
-      }
+  // 404 = não encontrado (seu backend faz isso)
+  if (r.status === 404) {
+    el("telHint").textContent = "Telefone não cadastrado.";
+    pendingNewClient = {
+      tel,
+      nome: (el("cliente_nome").value || "").trim(),
+      tipo_contato: (el("tipo_contato").value || "").trim()
+    };
+    modal.open(tel);
+    return;
+  }
 
-      if(j.found && j.cliente){
-        const c = j.cliente;
+  const j = await r.json().catch(()=> ({}));
 
-        el("cliente_nome").value = c.nome || "";
-        el("cliente_telefone").value = c.telefone || tel;
-        el("telHint").textContent = "Cliente carregado automaticamente ✅";
+  if (!r.ok) {
+    el("telHint").textContent = j.error ? `Erro: ${j.error}` : "Erro ao buscar cliente.";
+    return;
+  }
 
-        if (c.valor_saida != null) { el("saida").value = c.valor_saida; markParam(el("saida"), true); }
-        if (c.valor_km != null) { el("km_valor").value = c.valor_km; markParam(el("km_valor"), true); }
+  // OK: backend retorna o cliente DIRETO
+  if (j?.id) {
+    const c = j;
 
-        const tipoSel = el("tipo_contato");
-        if(!tipoSel.value && c.tipo) tipoSel.value = String(c.tipo).toLowerCase();
+    el("cliente_nome").value = c.nome || "";
+    el("cliente_telefone").value = c.telefone || tel;
+    el("telHint").textContent = "Cliente carregado automaticamente ✅";
 
-        recomputarTudo();
-        return;
-      }
+    if (c.valor_saida != null) { el("saida").value = c.valor_saida; markParam(el("saida"), true); }
+    if (c.valor_km != null) { el("km_valor").value = c.valor_km; markParam(el("km_valor"), true); }
 
-      el("telHint").textContent = "Telefone não cadastrado.";
-      pendingNewClient = {
-        tel,
-        nome: (el("cliente_nome").value || "").trim(),
-        tipo_contato: (el("tipo_contato").value || "").trim()
-      };
-      modal.open(tel);
-    }
+    const tipoSel = el("tipo_contato");
+    if (!tipoSel.value && c.tipo) tipoSel.value = String(c.tipo).toLowerCase();
+
+    recomputarTudo();
+    return;
+  }
+
+  el("telHint").textContent = "Resposta inesperada ao buscar cliente.";
+}
 
     async function createClientFromPending(){
       if(!pendingNewClient) return;
@@ -735,6 +745,9 @@
     let gAutoOrigem, gAutoDestino;
     let rotaTimer = null;
 
+    let origemOk = false;
+    let destinoOk = false;
+
     function initGoogle(){
       if (!window.google?.maps) {
         setStatus("Google Maps não carregou (verifique API key/domínio).", "danger");
@@ -767,11 +780,13 @@
         componentRestrictions: { country: "br" }
       });
 
-      gAutoOrigem.addListener("place_changed", scheduleRota);
-      gAutoDestino.addListener("place_changed", scheduleRota);
+      gAutoOrigem.addListener("place_changed", () => { origemOk = true; scheduleRota(); });
+      gAutoDestino.addListener("place_changed", () => { destinoOk = true; scheduleRota(); });
 
-      inputOrigem.addEventListener("input", scheduleRota);
-      inputDestino.addEventListener("input", scheduleRota);
+      // se o usuário digitar de novo, invalida até ele escolher uma sugestão
+      inputOrigem.addEventListener("input", () => { origemOk = false; scheduleRota(); });
+      inputDestino.addEventListener("input", () => { destinoOk = false; scheduleRota(); });
+
       inputOrigem.addEventListener("blur", scheduleRota);
       inputDestino.addEventListener("blur", scheduleRota);
 
@@ -810,7 +825,15 @@
         const v = getVeiculoSelecionado();
 
         if (!b?.id || !b?.endereco) return;
-        if (origem.length < 6 || destino.length < 6) return;
+
+        // evita tentativa com endereço incompleto
+        if (origem.length < 12 || destino.length < 12) return;
+
+        // só calcula rota se origem/destino foram escolhidos nas sugestões
+        if (!origemOk || !destinoOk) {
+          setStatus("Escolha origem e destino nas sugestões do Google.", "danger");
+          return;
+        }
 
         if (!window.google?.maps) {
           setStatus("Google Maps não carregou (verifique API key/domínio autorizado).", "danger");
@@ -878,7 +901,21 @@
       const n = Number(v || 0);
       return n.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
     }
-    function num(v){ return Number(String(v ?? "").replace(",", ".")) || 0; }
+  function num(v){
+  if (v === null || v === undefined) return 0;
+
+  const s = String(v).trim();
+  if (!s) return 0;
+
+  // remove separador de milhar e ajusta decimal
+  const cleaned = s
+    .replace(/\./g, '')   // remove pontos (milhar)
+    .replace(',', '.');   // vírgula decimal vira ponto
+
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
+
     function fmtDate(dt){
       if(!dt) return "";
       const d = new Date(dt);
@@ -933,37 +970,55 @@
       return saida + (km * valor_km);
     }
 
-    function recomputarTudo(){
-      const bruto = calcularBruto();
-      el("valorFinal").textContent = moneyBR(bruto);
+    function recomputarTudo() {
+  const bruto = calcularBruto();
+  el("valorFinal").textContent = moneyBR(bruto);
 
-      const manutPct = num(el("manutencao_percent").value || 6.5);
-      const diesel = num(el("diesel_preco_litro").value || 6.17);
-      const km = num(el("km").value);
+  const manutPct = num(el("manutencao_percent").value || 6.5);
+  const diesel = num(el("diesel_preco_litro").value || 6.17);
+  const km = num(el("km").value);
 
-      const v = getVeiculoSelecionado();
-      const kmPorLitro = num(v?.km_por_litro);
+  const v = getVeiculoSelecionado();
+  const kmPorLitro = num(v?.km_por_litro);
 
-      const pedagio = num(el("pedagio_total").value);
+  const pedagio = num(el("pedagio_total").value);
 
-      const manut = bruto * (manutPct/100);
-      const combust = kmPorLitro > 0 ? (km / kmPorLitro) * diesel : 0;
+  const manut = bruto * (manutPct / 100);
 
-      el("combustivel_valor").value = moneyBR(combust);
+  // Combustível: só calcula se kmPorLitro fizer sentido
+  let combust = 0;
+  if (km > 0 && kmPorLitro > 0) {
+    combust = (km / kmPorLitro) * diesel;
+  }
 
-      const tipo = (el("tipo_contato").value || "").toLowerCase();
-      const coopPct = (tipo === "cooperativa") ? 20 : 0;
-      const coop = bruto * (coopPct/100);
+  el("combustivel_valor").value = moneyBR(combust);
 
-      const liquido = bruto - pedagio - manut - combust - coop;
-      const margemKm = km > 0 ? (liquido / km) : 0;
+  const tipo = (el("tipo_contato").value || "").toLowerCase();
+  const coopPct = (tipo === "cooperativa") ? 20 : 0;
+  const coop = bruto * (coopPct / 100);
 
-      el("liquido_margem").value = `${moneyBR(liquido)}  •  ${moneyBR(margemKm)}/km`;
-      el("subResumo").textContent =
-        `Pedágio: ${moneyBR(pedagio)} • Manut.: ${moneyBR(manut)} • Comb.: ${moneyBR(combust)} • Coop.: ${moneyBR(coopPct ? coop : 0)}`;
+  let liquido = bruto - pedagio - manut - combust - coop;
 
-      return { bruto, manutPct, diesel, kmPorLitro, pedagio };
-    }
+  // evita "-0,00" por arredondamento
+  if (Math.abs(liquido) < 0.005) liquido = 0;
+
+  const margemKm = km > 0 ? (liquido / km) : 0;
+
+  el("liquido_margem").value = `${moneyBR(liquido)}  •  ${moneyBR(margemKm)}/km`;
+  el("subResumo").textContent =
+    `Pedágio: ${moneyBR(pedagio)} • Manut.: ${moneyBR(manut)} • Comb.: ${moneyBR(combust)} • Coop.: ${moneyBR(coopPct ? coop : 0)}`;
+
+  // Alertas úteis quando der ruim
+  if (km > 0 && !v) {
+    setStatus("Selecione um veículo para calcular corretamente (km/L).", "danger");
+  } else if (km > 0 && kmPorLitro <= 0) {
+    setStatus("Veículo sem km/L válido — combustível pode estar zerado.", "danger");
+  } else if (liquido < 0) {
+    setStatus("Líquido negativo — verifique pedágio, saída, valor/km e km/L.", "danger");
+  }
+
+  return { bruto, manutPct, diesel, kmPorLitro, pedagio };
+}
 
     // ====== SAVE ======
     async function salvar(){
