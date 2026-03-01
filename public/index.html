@@ -953,6 +953,22 @@
 
     function recomputarTudo() {
   const bruto = calcularBruto();
+console.log("[DEBUG]", {
+  saida_raw: el("saida")?.value,
+  km_valor_raw: el("km_valor")?.value,
+  km_raw: el("km")?.value,
+  pedagio_raw: el("pedagio_total")?.value,
+  manut_raw: el("manutencao_percent")?.value,
+  diesel_raw: el("diesel_preco_litro")?.value,
+  tipo: el("tipo_contato")?.value,
+  veiculo_id: el("veiculo_id")?.value
+});
+
+
+
+
+
+
   el("valorFinal").textContent = moneyBR(bruto);
 
   const manutPct = num(el("manutencao_percent").value || 6.5);
