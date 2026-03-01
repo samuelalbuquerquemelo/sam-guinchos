@@ -11,16 +11,33 @@ const app = express();
 // ==============================
 const AUTH_SECRET = process.env.AUTH_SECRET || "dev-secret-change-me";
 
+// Coloque aqui o(s) domínio(s) do seu FRONT (Wix etc) se usar domínio diferente do backend
+// Ex.: https://www.seudominio.com
+const EXTRA_ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
+
 // ==============================
 // MIDDLEWARES
 // ==============================
+
+// CORS: permite as origens conhecidas + (opcional) ALLOWED_ORIGINS via env
+const allowedOrigins = new Set([
+  "https://samguinchos.onrender.com",
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://127.0.0.1:3000",
+  ...EXTRA_ALLOWED_ORIGINS
+]);
+
 app.use(cors({
-  origin: [
-    "https://samguinchos.onrender.com",
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:3000"
-  ],
+  origin: (origin, cb) => {
+    // requests sem Origin (ex.: curl/health checks) -> permite
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.has(origin)) return cb(null, true);
+    return cb(new Error(`CORS bloqueado para origin: ${origin}`));
+  },
   credentials: true
 }));
 
@@ -29,13 +46,6 @@ app.use(express.static("public"));
 
 app.get("/health", (req, res) => res.status(200).send("ok"));
 
-/*
-function requireAuth(req,res,next){
-  const token = getToken(req);
-  if(!token) return res.status(401).json({ error:"Não autenticado" });
-  // aqui você pode validar token (se tiver)
-  return next();
-}*/
 // ==============================
 // HELPERS
 // ==============================
@@ -46,6 +56,21 @@ function isUUID(v) {
 
 function normTel(v) {
   return String(v || "").replace(/\D/g, "");
+}
+
+// Cookie parser simples (sem dependência)
+function getCookie(req, name) {
+  const raw = req.headers.cookie || "";
+  // split seguro por ';'
+  const parts = raw.split(";").map(p => p.trim()).filter(Boolean);
+  for (const p of parts) {
+    const idx = p.indexOf("=");
+    if (idx === -1) continue;
+    const k = p.slice(0, idx).trim();
+    const v = p.slice(idx + 1);
+    if (k === name) return decodeURIComponent(v);
+  }
+  return "";
 }
 
 // Token simples assinado (HMAC)
@@ -65,25 +90,61 @@ function verifyToken(token) {
   try {
     const [payload, sig] = String(token || "").split(".");
     if (!payload || !sig) return null;
+
     const expected = b64url(crypto.createHmac("sha256", AUTH_SECRET).update(payload).digest());
     if (expected !== sig) return null;
-    const obj = JSON.parse(Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+
+    const json = Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
+    const obj = JSON.parse(json);
+
     if (!obj?.id || !obj?.usuario) return null;
+
     // exp opcional
     if (obj.exp && Date.now() > obj.exp) return null;
+
     return obj;
   } catch {
     return null;
   }
 }
 
+function getTokenFromRequest(req) {
+  // 1) Authorization: Bearer xxx
+  const auth = req.headers.authorization || "";
+  const bearer = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (bearer) return bearer;
+
+  // 2) Cookie sam_token=xxx
+  const cookieToken = getCookie(req, "sam_token");
+  if (cookieToken) return cookieToken;
+
+  return "";
+}
+
+function setAuthCookie(res, token, req) {
+  // Se seu front estiver em outro domínio (Wix), você PRECISA SameSite=None; Secure
+  // Se estiver no mesmo domínio, Lax costuma funcionar também.
+  const isProd = process.env.NODE_ENV === "production";
+  const secure = isProd; // Render é https, então ok
+  const sameSite = isProd ? "None" : "Lax"; // em prod: None para cross-site
+  const maxAge = 60 * 60 * 12; // 12h em segundos
+
+  // HttpOnly = não acessível por JS, mais seguro
+  // Path=/ para valer em toda a aplicação
+  res.setHeader("Set-Cookie",
+    `sam_token=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=${sameSite}; ${secure ? "Secure;" : ""}`
+  );
+}
+
+// ==============================
+// AUTH MIDDLEWARE
+// ==============================
 function requireAuth(req, res, next) {
-  // libera health e login e assets
+  // libera health, auth e assets
   if (req.path === "/health") return next();
   if (req.path.startsWith("/auth/")) return next();
 
-  // assets (js, css, imagens, html) podem carregar para mostrar login
-  // mas as APIs precisam de token
+  // assets podem carregar para mostrar login
   const isApi =
     req.path.startsWith("/clientes") ||
     req.path.startsWith("/cliente") ||
@@ -91,12 +152,12 @@ function requireAuth(req, res, next) {
     req.path.startsWith("/veiculos") ||
     req.path.startsWith("/orcamentos") ||
     req.path.startsWith("/orcamento") ||
-    req.path.startsWith("/rota");
+    req.path.startsWith("/rota") ||
+    req.path === "/me";
 
   if (!isApi) return next();
 
-  const auth = req.headers.authorization || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const token = getTokenFromRequest(req);
   const user = verifyToken(token);
   if (!user) return res.status(401).json({ error: "Não autenticado" });
 
@@ -104,12 +165,12 @@ function requireAuth(req, res, next) {
   return next();
 }
 
+// ==============================
+// AUTH ROUTES
+// ==============================
 
-// ==============================
-// AUTH
-// ==============================
+// LOGIN (PÚBLICO) - ÚNICO (removi duplicado)
 app.post("/auth/login", async (req, res) => {
-
   try {
     const { usuario, senha } = req.body || {};
     if (!usuario || !senha) return res.status(400).json({ error: "Informe usuário e senha" });
@@ -125,8 +186,6 @@ app.post("/auth/login", async (req, res) => {
     const row = Array.isArray(data) ? data[0] : data;
     if (!row?.id) return res.status(401).json({ error: "Usuário ou senha inválidos" });
 
-
-
     const token = signToken({
       id: row.id,
       usuario: row.usuario,
@@ -134,69 +193,38 @@ app.post("/auth/login", async (req, res) => {
       exp: Date.now() + (1000 * 60 * 60 * 12) // 12h
     });
 
+    // ✅ Seto cookie também (ajuda quando o front não manda Authorization)
+    setAuthCookie(res, token, req);
+
     return res.json({
       ok: true,
       token,
       operador: { id: row.id, usuario: row.usuario, nome: row.nome }
     });
-
-
-  } catch (e) {
-    return res.status(500).json({ error: String(e) });
-  }
-});
-// ==============================
-// AUTH
-// ==============================
-
-// 1) LOGIN (PÚBLICO)
-app.post("/auth/login", async (req, res) => {
-  try {
-    const { usuario, senha } = req.body || {};
-    if (!usuario || !senha) {
-      return res.status(400).json({ error: "Informe usuário e senha" });
-    }
-
-    // chama sua RPC validar_operador (exemplo)
-    const { data, error } = await supabase.rpc("validar_operador", {
-      p_usuario: usuario,
-      p_senha: senha
-    });
-
-    if (error) return res.status(500).json({ error: error.message });
-    if (!data?.ok) return res.status(401).json({ error: "Usuário ou senha inválidos" });
-
-    // seta cookie (exemplo simples)
-    res.setHeader("Set-Cookie", `sam_token=${encodeURIComponent(data.token)}; Path=/; HttpOnly; SameSite=Lax`);
-
-    return res.json({ ok: true, operador: data.operador });
   } catch (e) {
     return res.status(500).json({ error: String(e) });
   }
 });
 
-// 2) DAQUI PRA BAIXO É PRIVADO
+// logout simples
+app.post("/auth/logout", (req, res) => {
+  // expira cookie
+  res.setHeader("Set-Cookie", `sam_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`);
+  return res.json({ ok: true });
+});
+
+// PRIVATE daqui para baixo
 app.use(requireAuth);
 
-// ==============================
-// ROTAS PRIVADAS
-// ==============================
-/*
-app.get("/clientes", ...);
-app.get("/bases", ...);
-app.get("/veiculos", ...);
-app.get("/orcamentos", ...);
-app.post("/orcamento", ...);
-app.post("/rota", ...);
-*/
+// quem sou eu (rota oficial)
+app.get("/auth/me", (req, res) => {
+  // requireAuth já preenche req.user
+  return res.json({ ok: true, user: req.user });
+});
 
-
-app.get("/auth/me", async (req, res) => {
-  const auth = req.headers.authorization || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  const user = verifyToken(token);
-  if (!user) return res.status(401).json({ error: "Não autenticado" });
-  return res.json({ ok: true, user });
+// ✅ Alias para acabar com o 404 que você mostrou (GET /me)
+app.get("/me", (req, res) => {
+  return res.json({ ok: true, user: req.user });
 });
 
 // ==============================
@@ -216,13 +244,10 @@ app.get("/clientes", async (req, res) => {
   }
 });
 
-// Buscar cliente por telefone (chave)
 app.get("/cliente_por_telefone", async (req, res) => {
   try {
     const tel = normTel(req.query.telefone);
-    if (!tel || tel.length < 10) {
-      return res.status(400).json({ error: "telefone inválido" });
-    }
+    if (!tel || tel.length < 10) return res.status(400).json({ error: "telefone inválido" });
 
     const { data, error } = await supabase
       .from("clientes")
@@ -231,7 +256,6 @@ app.get("/cliente_por_telefone", async (req, res) => {
       .maybeSingle();
 
     if (error) return res.status(500).json({ error: error.message });
-
     if (!data) return res.status(404).json({ error: "não encontrado" });
 
     return res.json(data);
@@ -249,7 +273,6 @@ app.post("/cliente", async (req, res) => {
     const tel = normTel(dados.telefone);
     if (!tel || tel.length < 10) return res.status(400).json({ error: "telefone inválido" });
 
-    // se já existe, devolve ele
     const { data: existing } = await supabase
       .from("clientes")
       .select("*")
@@ -258,11 +281,9 @@ app.post("/cliente", async (req, res) => {
 
     if (existing?.id) return res.json(existing);
 
-    // cria novo
     const payload = {
       nome: String(dados.nome).trim(),
       telefone: String(dados.telefone).trim(),
-      // defaults de preço, se vierem do front
       valor_saida: dados.valor_saida != null ? Number(dados.valor_saida) : null,
       valor_km: dados.valor_km != null ? Number(dados.valor_km) : null,
       tipo: dados.tipo || "particular"
@@ -326,7 +347,6 @@ app.post("/orcamento", async (req, res) => {
     if (!dados.base_id) return res.status(400).json({ error: "base_id é obrigatório" });
     if (!dados.veiculo_id) return res.status(400).json({ error: "veiculo_id é obrigatório" });
 
-    // VEICULO
     const { data: veic, error: eV } = await supabase
       .from("veiculos")
       .select("*")
@@ -335,7 +355,6 @@ app.post("/orcamento", async (req, res) => {
 
     if (eV || !veic) return res.status(400).json({ error: "veiculo não encontrado" });
 
-    // CLIENTE (opcional) - pelo cliente_id ou pelo telefone
     let cliente = null;
     if (dados.cliente_id && isUUID(dados.cliente_id)) {
       const { data: cli } = await supabase
@@ -356,8 +375,6 @@ app.post("/orcamento", async (req, res) => {
       }
     }
 
-    // PARAMETROS
-    // se cliente existe e não vier override, usa tabela
     let valor_saida = cliente?.valor_saida ?? 0;
     let valor_km = cliente?.valor_km ?? 0;
 
@@ -366,10 +383,8 @@ app.post("/orcamento", async (req, res) => {
 
     const km_total = Number(dados.km_total ?? dados.km ?? 0);
 
-    // BRUTO
     const valor_bruto = Number(valor_saida) + (km_total * Number(valor_km));
 
-    // CUSTOS
     const manutencao_percent = Number(dados.manutencao_percent ?? 6.5);
     const diesel_preco_litro = Number(dados.diesel_preco_litro ?? 6.17);
     const km_por_litro = Number(dados.km_por_litro ?? veic.km_por_litro);
@@ -378,9 +393,7 @@ app.post("/orcamento", async (req, res) => {
     const manutencao_valor = valor_bruto * (manutencao_percent / 100);
     const combustivel_valor = km_por_litro > 0 ? (km_total / km_por_litro) * diesel_preco_litro : 0;
 
-    const cooperativa_percent =
-      (cliente?.tipo === "cooperativa") ? 20 : 0;
-
+    const cooperativa_percent = (cliente?.tipo === "cooperativa") ? 20 : 0;
     const cooperativa_valor = valor_bruto * (cooperativa_percent / 100);
 
     const valor_liquido =
@@ -392,7 +405,6 @@ app.post("/orcamento", async (req, res) => {
 
     const margem_liquida_km = km_total > 0 ? (valor_liquido / km_total) : 0;
 
-    // SNAPSHOT (histórico visível)
     const snapNome = String(dados.cliente_nome || cliente?.nome || "").trim();
     const snapTel = String(dados.cliente_telefone || cliente?.telefone || "").trim();
     const tipo_contato = String(dados.tipo_contato || "").trim();
@@ -402,11 +414,9 @@ app.post("/orcamento", async (req, res) => {
       base_id: dados.base_id,
       veiculo_id: veic.id,
 
-      // legado que você já tinha
       cliente: cliente?.nome ?? snapNome,
       veiculo: veic.nome,
 
-      // NOVOS snapshots
       tipo_contato,
       cliente_nome: snapNome,
       cliente_telefone: snapTel,
@@ -443,7 +453,6 @@ app.post("/orcamento", async (req, res) => {
       .single();
 
     if (error) return res.status(400).json({ error: error.message });
-
     return res.json(data);
   } catch (e) {
     console.log(e);
@@ -538,7 +547,13 @@ app.post("/rota", async (req, res) => {
         };
       } catch (err) {
         const aborted = String(err?.name || "").toLowerCase().includes("abort");
-        return { ok: false, status: aborted ? "TIMEOUT" : "FETCH_ERROR", error_message: aborted ? "Request timeout" : String(err), from, to };
+        return {
+          ok: false,
+          status: aborted ? "TIMEOUT" : "FETCH_ERROR",
+          error_message: aborted ? "Request timeout" : String(err),
+          from,
+          to
+        };
       } finally {
         clearTimeout(timeout);
       }
