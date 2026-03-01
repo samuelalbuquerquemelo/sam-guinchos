@@ -410,17 +410,17 @@
 
             <div>
               <label>Valor Saída (parametrizado)</label>
-              <input id="saida" inputmode="decimal" placeholder="200" />
+              <input id="saida" inputmode="decimal" value="200" />
             </div>
 
             <div>
               <label>Valor KM (parametrizado)</label>
-              <input id="km_valor" inputmode="decimal" placeholder="2.85" />
+              <input id="km_valor" inputmode="decimal" value="2,85" />
             </div>
 
             <div>
               <label>KM (auto)</label>
-              <input id="km" inputmode="decimal" placeholder="0.0" class="param" />
+              <input id="km" inputmode="decimal" value="0.0" class="param" />
             </div>
 
             <div>
@@ -622,6 +622,21 @@
     let pendingNewClient = null; // { tel, nome, tipo_contato }
 
     function normalizePhone(v){ return String(v || "").replace(/\D/g, ""); }
+        function formatPhoneBR(raw){
+      const d = String(raw || "").replace(/\D/g, "").slice(0, 11); // máx 11
+      if (d.length <= 2) return d;
+      if (d.length <= 6) return `(${d.slice(0,2)}) ${d.slice(2)}`;
+      if (d.length <= 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;      // fixo
+      return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;                           // celular
+    }
+
+    function applyPhoneMask(inputEl){
+      const before = inputEl.value;
+      const digits = before.replace(/\D/g, "");
+      const formatted = formatPhoneBR(digits);
+      inputEl.value = formatted;
+      return digits; // retorna só números se você precisar
+    }
 
     function markParam(elm, isParam){
       if(!elm) return;
@@ -642,7 +657,7 @@
 
       el("telHint").textContent = "Digite o telefone para buscar automaticamente.";
 
-      if(telNorm.length < 8) return;
+      if(telNorm.length < 10) return;
 
       if(telNorm === lastTelNorm) return;
       lastTelNorm = telNorm;
@@ -945,11 +960,25 @@
 
     // ====== CÁLCULOS ======
     function calcularBruto(){
-      const saida = num(el("saida").value);
-      const valor_km = num(el("km_valor").value);
-      const km = num(el("km").value);
-      return saida + (km * valor_km);
-    }
+  const saidaEl = el("saida");
+  const kmValorEl = el("km_valor");
+  const kmEl = el("km");
+
+  const saidaTxt = (saidaEl?.value ?? "").trim();
+  const kmValorTxt = (kmValorEl?.value ?? "").trim();
+
+  const km = num(kmEl?.value ?? 0);
+
+  // Defaults quando campo está vazio
+  const saida = saidaTxt === "" ? 200 : num(saidaTxt);
+  const valor_km = kmValorTxt === "" ? 2.85 : num(kmValorTxt);
+
+  // reflete defaults na tela pra não confundir
+  if (saidaEl && saidaTxt === "") saidaEl.value = "200";
+  if (kmValorEl && kmValorTxt === "") kmValorEl.value = "2,85";
+
+  return saida + (km * valor_km);
+}
 
     function recomputarTudo() {
   const bruto = calcularBruto();
@@ -1209,8 +1238,15 @@ console.log("[DEBUG]", {
     el("btnNovoNao").addEventListener("click", ()=>{ pendingNewClient = null; modal.close(); });
     el("btnNovoSim").addEventListener("click", createClientFromPending);
 
-    el("cliente_telefone").addEventListener("input", lookupTelefoneDebounced);
-    el("cliente_telefone").addEventListener("blur", lookupTelefoneDebounced);
+        el("cliente_telefone").addEventListener("input", () => {
+      applyPhoneMask(el("cliente_telefone"));
+      lookupTelefoneDebounced();
+    });
+
+    el("cliente_telefone").addEventListener("blur", () => {
+      applyPhoneMask(el("cliente_telefone"));
+      lookupTelefoneDebounced();
+    });
 
     el("tipo_contato").addEventListener("change", ()=>{ recomputarTudo(); });
 
