@@ -383,7 +383,14 @@ app.post("/orcamento", async (req, res) => {
 
     const km_total = Number(dados.km_total ?? dados.km ?? 0);
 
-    const valor_bruto = Number(valor_saida) + (km_total * Number(valor_km));
+    // franquia (km grátis) — vem do cliente ou override do front
+    let franquia_km = Number(dados.franquia_km ?? cliente?.franquia_km ?? 0);
+    if (!Number.isFinite(franquia_km) || franquia_km < 0) franquia_km = 0;
+
+    const km_cobrado = Math.max(0, km_total - franquia_km);
+
+    // BRUTO (cobra só o que excede a franquia)
+    const valor_bruto = Number(valor_saida) + (km_cobrado * Number(valor_km));
 
     const manutencao_percent = Number(dados.manutencao_percent ?? 6.5);
     const diesel_preco_litro = Number(dados.diesel_preco_litro ?? 6.17);
@@ -427,6 +434,8 @@ app.post("/orcamento", async (req, res) => {
       destino: dados.destino,
 
       km_total,
+      franquia_km,
+      km_cobrado,
       valor_saida,
       valor_km,
       valor_bruto,

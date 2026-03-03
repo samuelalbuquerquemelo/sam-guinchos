@@ -357,7 +357,13 @@
               <div class="idbox">
                 <div>
                   <div class="idlabel">Nome do cliente</div>
-                  <input id="cliente_nome" placeholder="Nome do cliente" />
+                  <select id="cliente_select">
+                  <option value="">Selecione o cliente...</option>
+                  <option value="__novo__">+ Novo cliente...</option>
+                </select>
+
+                <!-- mantém o input só como “fallback”/edição manual -->
+                <input id="cliente_nome" placeholder="Nome do cliente" style="margin-top:8px;" />
                 </div>
 
                 <div>
@@ -419,8 +425,8 @@
             </div>
 
             <div>
-              <label>KM (auto)</label>
-              <input id="km" inputmode="decimal" value="0.0" class="param" />
+              <label>KM (auto) <span id="kmFranquiaBadge" style="display:none; color:#ef4444; font-weight:900;">(−40km)</span></label>
+              <input id="km" inputmode="decimal" placeholder="0.0" class="param" />
             </div>
 
             <div>
@@ -544,6 +550,8 @@
   <script>
     let bases = [];
     let veiculos = [];
+    let clientes = [];
+    let clienteSelecionado = null;
     let historico = [];
     let histTimer = null;
 
@@ -942,6 +950,34 @@ function num(v){
     }
 
     // ====== LOADERS ======
+
+    async function carregarClientes(){
+  const r = await fetch("/clientes", { cache:"no-store", credentials:"include" });
+  const d = await r.json().catch(()=> []);
+  clientes = Array.isArray(d) ? d : [];
+
+  // só cooperativas
+  const cooperativas = clientes.filter(c => String(c.tipo || "").toLowerCase() === "cooperativa");
+
+  const sel = el("cliente_select");
+  const current = sel.value;
+
+  sel.innerHTML =
+    `<option value="">Selecione o cliente...</option>` +
+    cooperativas.map(c => `
+      <option value="${c.id}"
+        data-nome="${encodeURIComponent(c.nome || "")}"
+        data-saida="${c.valor_saida ?? ""}"
+        data-km="${c.valor_km ?? ""}"
+        data-franquia="${c.franquia_km ?? 0}"
+      >
+        ${c.nome}
+      </option>
+    `).join("") +
+    `<option value="__novo__">+ Novo cliente...</option>`;
+
+  if (current) sel.value = current;
+}
     async function carregarBases(){
       const r = await fetch("/bases", { cache: "no-store" ,credentials: "include"});
       const d = await r.json().catch(()=> []);
@@ -981,39 +1017,124 @@ function num(v){
     }
 
     // ====== CÁLCULOS ======
-    function calcularBruto(){
-  const saidaEl = el("saida");
-  const kmValorEl = el("km_valor");
-  const kmEl = el("km");
-
-  const saidaTxt = (saidaEl?.value ?? "").trim();
-  const kmValorTxt = (kmValorEl?.value ?? "").trim();
-
-  const km = num(kmEl?.value ?? 0);
-
-  // Defaults quando campo está vazio
-  const saida = saidaTxt === "" ? 200 : num(saidaTxt);
-  const valor_km = kmValorTxt === "" ? 2.85 : num(kmValorTxt);
-
-  // reflete defaults na tela pra não confundir
-  if (saidaEl && saidaTxt === "") saidaEl.value = "200";
-  if (kmValorEl && kmValorTxt === "") kmValorEl.value = "2,85";
-
-  return saida + (km * valor_km);
+ function getFranquiaKmAtual(){
+  const sel = el("cliente_select");
+  const opt = sel?.options?.[sel.selectedIndex];
+  const fk = Number(opt?.dataset?.franquia || 0);
+  return Number.isFinite(fk) ? fk : 0;
 }
 
-    function recomputarTudo() {
-  const bruto = calcularBruto();
-console.log("[DEBUG]", {
-  saida_raw: el("saida")?.value,
-  km_valor_raw: el("km_valor")?.value,
-  km_raw: el("km")?.value,
-  pedagio_raw: el("pedagio_total")?.value,
-  manut_raw: el("manutencao_percent")?.value,
-  diesel_raw: el("diesel_preco_litro")?.value,
-  tipo: el("tipo_contato")?.value,
-  veiculo_id: el("veiculo_id")?.value
-});
+function calcularBruto(){
+  const saida = num(el("saida").value);
+  const valor_km = num(el("km_valor").value);
+  const km_total = num(el("km").value);
+
+  const franquia = getFranquiaKmAtual();
+  const km_cobrado = Math.max(0, km_total - franquia);
+
+  return saida + (km_cobrado * valor_km);
+}
+function setFranquiaBadge(v){
+  const b = el("kmFranquiaBadge");
+  const n = Number(v) || 0;
+  if (n > 0){
+    b.style.display = "inline";
+    b.textContent = `(−${n}km)`;
+  } else {
+    b.style.display = "none";
+  }
+}
+
+function onClienteSelecionado(){
+  const sel = el("cliente_select");
+  const id = sel.value;
+
+  if (id === "__novo__"){
+    // limpa seleção, deixa usuário digitar e usar modal/telefone
+    sel.value = "";
+    clienteSelecionado = null;
+    setStatus("Digite telefone/nome e cadastre o novo cliente.", "ok");
+    el("cliente_nome").focus();
+    return;
+  }
+
+  const opt = sel.options[sel.selectedIndex];
+  if (!id || !opt) {
+    clienteSelecionado = null;
+    setFranquiaBadge(0);
+    return;
+  }
+
+  const nome = decodeURIComponent(opt.dataset.nome || "");
+  const saida = opt.dataset.saida;
+  const kmv = opt.dataset.km;
+  const franquia = opt.dataset.franquia;
+
+  clienteSelecionado = { id, nome, saida, kmv, franquia };
+
+  // força tipo cooperativa
+  el("tipo_contato").value = "cooperativa";
+
+  // preenche nome e preços
+  el("cliente_nome").value = nome || "";
+  if (saida !== "") { el("saida").value = String(saida).replace(".", ","); markParam(el("saida"), true); }
+  if (kmv !== "") { el("km_valor").value = String(kmv).replace(".", ","); markParam(el("km_valor"), true); }
+
+  // badge da franquia
+  setFranquiaBadge(franquia);
+
+  recomputarTudo();
+  scheduleRota();
+}
+
+
+function recomputarTudo(){
+  // ===== entradas =====
+  const saida = num(el("saida").value);
+  const valor_km = num(el("km_valor").value);
+  const km_total = num(el("km").value);
+
+  const manutPct = num(el("manutencao_percent").value || 6.5);
+  const diesel = num(el("diesel_preco_litro").value || 6.17);
+  const pedagio = num(el("pedagio_total").value);
+
+  const v = getVeiculoSelecionado();
+  const kmPorLitro = num(v?.km_por_litro);
+
+  // ===== franquia só no faturamento =====
+  const franquia = getFranquiaKmAtual();
+  const km_cobrado = Math.max(0, km_total - franquia);
+
+  // RECEITA (bruto) usa km_cobrado
+  const bruto = saida + (km_cobrado * valor_km);
+  el("valorFinal").textContent = moneyBR(bruto);
+
+  // CUSTOS usam km_total (real)
+  const manut = bruto * (manutPct / 100); // % do bruto (como você definiu)
+  const combust = kmPorLitro > 0 ? (km_total / kmPorLitro) * diesel : 0;
+
+  el("combustivel_valor").value = moneyBR(combust);
+
+  // taxa cooperativa (sobre o bruto)
+  const tipo = (el("tipo_contato").value || "").toLowerCase();
+  const coopPct = (tipo === "cooperativa") ? 20 : 0;
+  const coop = bruto * (coopPct / 100);
+
+  // líquido
+  const liquido = bruto - pedagio - manut - combust - coop;
+  const margemKm = km_total > 0 ? (liquido / km_total) : 0; // margem por km rodado (real)
+
+  el("liquido_margem").value = `${moneyBR(liquido)}  •  ${moneyBR(margemKm)}/km`;
+
+  // badge/frase de franquia (se você colocou o label vermelho)
+  if (typeof setFranquiaBadge === "function") setFranquiaBadge(franquia);
+
+  el("subResumo").textContent =
+    `KM total: ${km_total.toFixed(1)} • KM cobrado: ${km_cobrado.toFixed(1)} (franquia ${franquia}km) • ` +
+    `Pedágio: ${moneyBR(pedagio)} • Manut.: ${moneyBR(manut)} • Comb.: ${moneyBR(combust)} • Coop.: ${moneyBR(coopPct ? coop : 0)}`;
+
+  return { bruto, manutPct, diesel, kmPorLitro, pedagio, franquia, km_total, km_cobrado };
+};
 
 
 
@@ -1114,6 +1235,7 @@ console.log("[DEBUG]", {
           diesel_preco_litro: num(el("diesel_preco_litro").value || 6.17),
           km_por_litro: custos.kmPorLitro,
           pedagio_total: num(el("pedagio_total").value),
+          franquia_km: getFranquiaKmAtual()
         };
 
         const r = await fetch("/orcamento", {
@@ -1238,11 +1360,13 @@ console.log("[DEBUG]", {
       await carregarBases();
       await carregarVeiculos();
       await carregarHistorico();
+      await carregarClientes();
       iniciarAutoRefreshHistorico();
       recomputarTudo();
 
       if(window.google?.maps) initGoogle();
       setStatus("Pronto ✅", "ok");
+      el("cliente_select").addEventListener("change", onClienteSelecionado);
     }
 
     function iniciarAutoRefreshHistorico(){
