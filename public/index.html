@@ -1088,8 +1088,9 @@ function onClienteSelecionado(){
 }
 
 
-function recomputarTudo(){
-  // ===== entradas =====
+function recomputarTudo() {
+
+  // ===== ENTRADAS =====
   const saida = num(el("saida").value);
   const valor_km = num(el("km_valor").value);
   const km_total = num(el("km").value);
@@ -1098,95 +1099,41 @@ function recomputarTudo(){
   const diesel = num(el("diesel_preco_litro").value || 6.17);
   const pedagio = num(el("pedagio_total").value);
 
+  const tipo = (el("tipo_contato").value || "").toLowerCase();
   const v = getVeiculoSelecionado();
   const kmPorLitro = num(v?.km_por_litro);
 
-  // ===== franquia só no faturamento =====
+  // ===== FRANQUIA (só no faturamento) =====
   const franquia = getFranquiaKmAtual();
   const km_cobrado = Math.max(0, km_total - franquia);
+  setFranquiaBadge(franquia);
 
-  // RECEITA (bruto) usa km_cobrado
+  // ===== RECEITA =====
   const bruto = saida + (km_cobrado * valor_km);
   el("valorFinal").textContent = moneyBR(bruto);
 
-  // CUSTOS usam km_total (real)
-  const manut = bruto * (manutPct / 100); // % do bruto (como você definiu)
+  // ===== CUSTOS (km real) =====
+  const manut = bruto * (manutPct / 100);
   const combust = kmPorLitro > 0 ? (km_total / kmPorLitro) * diesel : 0;
-
   el("combustivel_valor").value = moneyBR(combust);
 
-  // taxa cooperativa (sobre o bruto)
-  const tipo = (el("tipo_contato").value || "").toLowerCase();
   const coopPct = (tipo === "cooperativa") ? 20 : 0;
   const coop = bruto * (coopPct / 100);
 
-  // líquido
   const liquido = bruto - pedagio - manut - combust - coop;
-  const margemKm = km_total > 0 ? (liquido / km_total) : 0; // margem por km rodado (real)
+  const margemKm = km_total > 0 ? (liquido / km_total) : 0;
 
   el("liquido_margem").value = `${moneyBR(liquido)}  •  ${moneyBR(margemKm)}/km`;
-
-  // badge/frase de franquia (se você colocou o label vermelho)
-  if (typeof setFranquiaBadge === "function") setFranquiaBadge(franquia);
-
   el("subResumo").textContent =
     `KM total: ${km_total.toFixed(1)} • KM cobrado: ${km_cobrado.toFixed(1)} (franquia ${franquia}km) • ` +
     `Pedágio: ${moneyBR(pedagio)} • Manut.: ${moneyBR(manut)} • Comb.: ${moneyBR(combust)} • Coop.: ${moneyBR(coopPct ? coop : 0)}`;
 
-  return { bruto, manutPct, diesel, kmPorLitro, pedagio, franquia, km_total, km_cobrado };
-};
+  console.log("[DEBUG]", {
+    saida, valor_km, km_total, franquia, km_cobrado,
+    bruto, manut, combust, coop, liquido, margemKm
+  });
 
-
-
-
-
-
-  el("valorFinal").textContent = moneyBR(bruto);
-
-  const manutPct = num(el("manutencao_percent").value || 6.5);
-  const diesel = num(el("diesel_preco_litro").value || 6.17);
-  const km = num(el("km").value);
-
-  const v = getVeiculoSelecionado();
-  const kmPorLitro = num(v?.km_por_litro);
-
-  const pedagio = num(el("pedagio_total").value);
-
-  const manut = bruto * (manutPct / 100);
-
-  // Combustível: só calcula se kmPorLitro fizer sentido
-  let combust = 0;
-  if (km > 0 && kmPorLitro > 0) {
-    combust = (km / kmPorLitro) * diesel;
-  }
-
-  el("combustivel_valor").value = moneyBR(combust);
-
-  const tipo = (el("tipo_contato").value || "").toLowerCase();
-  const coopPct = (tipo === "cooperativa") ? 20 : 0;
-  const coop = bruto * (coopPct / 100);
-
-  let liquido = bruto - pedagio - manut - combust - coop;
-
-  // evita "-0,00" por arredondamento
-  if (Math.abs(liquido) < 0.005) liquido = 0;
-
-  const margemKm = km > 0 ? (liquido / km) : 0;
-
-  el("liquido_margem").value = `${moneyBR(liquido)}  •  ${moneyBR(margemKm)}/km`;
-  el("subResumo").textContent =
-    `Pedágio: ${moneyBR(pedagio)} • Manut.: ${moneyBR(manut)} • Comb.: ${moneyBR(combust)} • Coop.: ${moneyBR(coopPct ? coop : 0)}`;
-
-  // Alertas úteis quando der ruim
-  if (km > 0 && !v) {
-    setStatus("Selecione um veículo para calcular corretamente (km/L).", "danger");
-  } else if (km > 0 && kmPorLitro <= 0) {
-    setStatus("Veículo sem km/L válido — combustível pode estar zerado.", "danger");
-  } else if (liquido < 0) {
-    setStatus("Líquido negativo — verifique pedágio, saída, valor/km e km/L.", "danger");
-  }
-
-  return { bruto, manutPct, diesel, kmPorLitro, pedagio };
+  return { bruto, liquido, margemKm, franquia, km_cobrado, km_total };
 }
 
     // ====== SAVE ======
